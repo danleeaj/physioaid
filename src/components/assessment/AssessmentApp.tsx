@@ -30,9 +30,7 @@ import {
 } from "@/lib/functional-tests/floor-rising";
 import { scoreFallsEfficacy } from "@/lib/questionnaire";
 import { getDemoMotionMetrics } from "@/lib/sensors/motion-summary";
-import {
-  getDemoChairStandMetrics,
-} from "@/lib/vision/chair-stand";
+import { getDemoChairStandMetrics } from "@/lib/vision/chair-stand";
 import type {
   AssessmentStep,
   ChairStandMetrics,
@@ -224,12 +222,7 @@ export function AssessmentApp() {
                 Start assessment <ArrowRight aria-hidden size={22} />
               </button>
             </div>
-            <DashboardPreview
-              ability={analytics.abilityBand}
-              confidence={analytics.confidenceBand}
-              profile={profileCopy[analytics.profile].title}
-              risk={analytics.riskCategory}
-            />
+            <PathwayPreview />
           </section>
         )}
 
@@ -801,30 +794,40 @@ function StepPanel({
   );
 }
 
-function DashboardPreview({
-  ability,
-  confidence,
-  profile,
-  risk,
-}: {
-  ability: string;
-  confidence: string;
-  profile: string;
-  risk: string;
-}) {
+function PathwayPreview() {
+  const pathway = [
+    "Safety + consent",
+    "Emergency contact",
+    "Demographics",
+    "Falls efficacy / confidence",
+    "Chair stand test",
+    "Motion sensor gait walking",
+    "Floor-rising test",
+    "Ability-confidence dashboard",
+  ];
+
   return (
     <div className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
       <p className="text-base font-semibold text-[var(--primary-dark)]">
-        Demo dashboard preview
+        Guided assessment pathway
       </p>
-      <SummaryGrid
-        items={[
-          ["Ability", ability],
-          ["Confidence", confidence],
-          ["Profile", profile],
-          ["Risk", risk],
-        ]}
-      />
+      <ol className="mt-4 grid gap-3">
+        {pathway.map((item, index) => (
+          <li
+            className="flex items-start gap-3 rounded-md border border-[var(--line)] p-3"
+            key={item}
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#e8f5f2] text-base font-bold text-[var(--primary-dark)]">
+              {index + 1}
+            </span>
+            <span className="font-semibold leading-snug">{item}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-4 text-base text-[var(--muted)]">
+        Higher-risk tests are skipped when an earlier screen suggests it is not
+        safe to continue.
+      </p>
     </div>
   );
 }
