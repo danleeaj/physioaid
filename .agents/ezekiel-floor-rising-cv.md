@@ -2,15 +2,19 @@
 
 Read:
 
-1. `docs/handoff/CONSTITUTION.md`
-2. `docs/handoff/docs/agents/computer-vision-agent.md`
-3. `docs/handoff/docs/design.md`
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/handoff/CONSTITUTION.md`
+4. `.agents/README.md`
+5. `docs/handoff/docs/design.md`
+6. `docs/motion-vision-scaffold.md`
 
 You are working on Ezekiel's floor-rising computer vision module.
 
 Allowed files:
 
 - `src/lib/vision/**`
+- `src/components/assessment/CameraSetup.tsx`
 - `src/components/assessment/**` only for the floor-rising camera screen
 - Floor-rising types in `src/types/assessment.ts`, only if coordinated
 

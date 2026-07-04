@@ -160,13 +160,14 @@ Use this fallback dataset if live camera/sensor input fails:
     "postFallRecoveryConfidence": 3
   },
   "chairStand": {
-    "completed": true,
+    "completionStatus": "completed",
     "repetitions": 5,
     "durationSeconds": 17.8,
-    "qualityFlags": ["slow_rise", "uses_arm_support_once"]
+    "movementQuality": "variable",
+    "source": "demo"
   },
   "motion": {
-    "stabilityIndex": 0.58,
+    "stabilityScore": 0.58,
     "rhythmConsistency": 0.62
   },
   "expectedProfile": "high_vulnerability",
@@ -178,8 +179,8 @@ Use this fallback dataset if live camera/sensor input fails:
 
 | Risk | Fallback |
 |---|---|
-| Camera permission fails | Use demo-mode chair stand metrics |
-| Accelerometer permission fails | Use manual timing and demo stability index |
+| Camera permission fails | Use demo/manual chair stand metrics |
+| Accelerometer permission fails | Use manual timing and demo stability score |
 | Analytics bug | Hard-code one safe demo fixture |
 | Backend unavailable | Store session in local state |
 | Report export fails | Show printable report page |

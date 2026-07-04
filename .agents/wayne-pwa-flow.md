@@ -2,9 +2,11 @@
 
 Read:
 
-1. `docs/handoff/CONSTITUTION.md`
-2. `docs/handoff/docs/agents/frontend-agent.md`
-3. `docs/uiux-mobbin-study.md`
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/handoff/CONSTITUTION.md`
+4. `.agents/README.md`
+5. `docs/uiux-mobbin-study.md`
 
 You are working on Wayne's app flow, PWA, UX, and integration branch.
 

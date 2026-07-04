@@ -1,15 +1,22 @@
 # Physio-Aid Team Agent Prompts
 
-These prompts are ready to paste into Codex, Claude Code, or another coding agent after a teammate checks out the repo.
+These prompts are the canonical teammate-ready instructions to paste into Codex, Claude Code, or another coding agent after a teammate checks out the repo.
 
-Before any module work, every agent should read:
+Repo: `https://github.com/wlcsmmm/physioaid`
 
-1. `docs/handoff/START_HERE.md`
-2. `docs/handoff/CONSTITUTION.md`
-3. `docs/handoff/CODEX_HANDOFF.md`
-4. The role-specific brief in `docs/handoff/docs/agents/`
+GitHub `main` and the linked Vercel deployment are the source of truth. Do not rely on stale local dev servers for current UI state.
 
-Use one feature branch per teammate. Do not work directly on `main`.
+## Read First
+
+Every teammate should read:
+
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/handoff/CONSTITUTION.md`
+4. Their role-specific prompt in this folder
+5. `docs/motion-vision-scaffold.md` for motion or camera work
+
+Older files under `docs/handoff/docs/agents/`, `docs/handoff/START_HERE.md`, and `docs/handoff/CODEX_HANDOFF.md` are retained only as compatibility pointers.
 
 ## Team Branches
 
@@ -18,6 +25,8 @@ Use one feature branch per teammate. Do not work directly on `main`.
 - Ezekiel: `feature/ezekiel-floor-rising-cv`
 - Shaun / clinical support: `feature/clinical-copy-rules`
 - QA: `feature/qa-demo-readiness`
+
+Do not work directly on `main`.
 
 ## Pull Request Rule
 
@@ -29,5 +38,10 @@ Every pull request should include:
 - How to test
 - Fallback behavior
 - Risks or blockers
+
+Before opening a pull request, run:
+
+- `npm run lint`
+- `npm run build`
 
 Never add diagnosis, prescription, autonomous medical advice, or clinical validation claims.

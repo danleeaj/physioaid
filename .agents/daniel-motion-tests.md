@@ -2,15 +2,19 @@
 
 Read:
 
-1. `docs/handoff/CONSTITUTION.md`
-2. `docs/handoff/docs/agents/motion-agent.md`
-3. `docs/handoff/docs/agents/computer-vision-agent.md` only for shared chair-stand context
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/handoff/CONSTITUTION.md`
+4. `.agents/README.md`
+5. `docs/motion-vision-scaffold.md`
 
 You are working on Daniel's motion sensor module.
 
 Allowed files:
 
 - `src/lib/sensors/**`
+- `src/types/motion.ts`
+- `src/components/assessment/MotionSensorStatus.tsx`
 - Motion-related types in `src/types/assessment.ts`, only if the contract change is necessary
 - Motion test UI inside `src/components/assessment/**`, only when coordinated with Wayne
 
