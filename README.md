@@ -13,6 +13,16 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+## PWA
+
+Physio-Aid is configured as a PWA with:
+
+- `src/app/manifest.ts`
+- install icons in `public/`
+- iOS web app metadata in `src/app/layout.tsx`
+
+For real mobile motion sensor testing, use the HTTPS Vercel URL on iPhone Safari. Local `http://127.0.0.1` is useful for UI work, but not enough for the production-like permission path.
+
 If the dev server reports too many open files, use polling mode:
 
 ```bash
@@ -64,6 +74,8 @@ src/config/**
 src/content/**
 package.json
 ```
+
+Ready-to-use teammate prompts live in `.agents/`.
 
 ## Branches
 
