@@ -1,5 +1,5 @@
 import { AssessmentApp } from "@/components/assessment/AssessmentApp";
 
-export default function Home() {
+export default function AssessmentPage() {
   return <AssessmentApp />;
 }

@@ -1,1 +1,3 @@
-@AGENTS.md
+# Claude Instructions
+
+Follow `AGENTS.md`.
