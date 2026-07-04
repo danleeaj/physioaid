@@ -1,5 +1,6 @@
 import { DECISION_SUPPORT_DISCLAIMER } from "@/config/clinical-config";
 import { scoreFallsEfficacy } from "@/lib/questionnaire";
+import { getDemoFloorRisingMetrics } from "@/lib/functional-tests/floor-rising";
 import { getDemoMotionMetrics } from "@/lib/sensors/motion-summary";
 import {
   getDemoChairStandMetrics,
@@ -46,6 +47,7 @@ export function createDemoSession(): AssessmentSession {
     questionnaire,
     chairStand: getDemoChairStandMetrics(),
     motion: getDemoMotionMetrics(),
+    floorRising: getDemoFloorRisingMetrics(),
     vision: getDemoVisionMetrics(),
     report: {
       id: "demo-report",

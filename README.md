@@ -24,7 +24,7 @@ WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 npm run dev
 Use the `Load Mr Tan demo` button, then walk through:
 
 ```txt
-Landing -> Safety -> Emergency Contact -> Demographics -> Falls Efficacy -> Chair Stand -> Analytics -> Dashboard -> Report
+Landing -> Safety -> Emergency Contact -> Demographics -> Falls Efficacy -> Chair Stand -> Motion Sensor Gait Walking -> Floor-Rising -> Dashboard -> Report
 ```
 
 The demo remains usable even before camera or motion permissions are implemented.

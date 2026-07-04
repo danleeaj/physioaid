@@ -5,11 +5,11 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  Check,
   ClipboardList,
   Download,
   HeartPulse,
   Link as LinkIcon,
+  PersonStanding,
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
@@ -24,17 +24,22 @@ import {
 } from "@/config/clinical-config";
 import { analyseAssessment } from "@/lib/analytics/ability-confidence";
 import { createDemoSession } from "@/lib/demo-session";
+import {
+  getDemoFloorRisingMetrics,
+  getSkippedFloorRisingMetrics,
+} from "@/lib/functional-tests/floor-rising";
 import { scoreFallsEfficacy } from "@/lib/questionnaire";
 import { getDemoMotionMetrics } from "@/lib/sensors/motion-summary";
 import {
   getDemoChairStandMetrics,
-  getDemoVisionMetrics,
 } from "@/lib/vision/chair-stand";
 import type {
   AssessmentStep,
   ChairStandMetrics,
   Demographics,
   EmergencyContact,
+  FloorRisingMetrics,
+  MotionMetrics,
   SafetyScreenResult,
 } from "@/types/assessment";
 
@@ -45,7 +50,8 @@ const steps: AssessmentStep[] = [
   "demographics",
   "questionnaire",
   "chair_stand",
-  "analytics",
+  "motion_gait",
+  "floor_rising",
   "dashboard",
 ];
 
@@ -56,7 +62,8 @@ const stepLabels: Record<AssessmentStep, string> = {
   demographics: "Details",
   questionnaire: "Confidence",
   chair_stand: "Chair stand",
-  analytics: "Summary",
+  motion_gait: "Gait walk",
+  floor_rising: "Floor rise",
   dashboard: "Dashboard",
   report: "Report",
 };
@@ -103,13 +110,16 @@ export function AssessmentApp() {
     movementQuality: "variable",
     source: "demo",
   });
+  const [motion, setMotion] = useState<MotionMetrics>(getDemoMotionMetrics());
+  const [floorRising, setFloorRising] = useState<FloorRisingMetrics>(
+    getDemoFloorRisingMetrics(),
+  );
 
   const currentStep = steps[stepIndex];
   const scoredQuestionnaire = useMemo(
     () => scoreFallsEfficacy(questionnaire),
     [questionnaire],
   );
-  const motion = getDemoMotionMetrics();
   const analytics = analyseAssessment({
     questionnaire: scoredQuestionnaire,
     chairStand,
@@ -120,8 +130,34 @@ export function AssessmentApp() {
     safety.breathlessness ||
     safety.pain ||
     safety.recentFallOrInjury;
+  const chairStandGate = getChairStandGate(chairStand, blockedBySafety);
+  const motionGate = getMotionGate(motion);
+  const floorRisingGate = getFloorRisingGate(floorRising);
+  const stoppedBeforeHigherRisk =
+    blockedBySafety ||
+    !chairStandGate.canProceed ||
+    !motionGate.canProceed ||
+    !floorRisingGate.canProceed;
 
   function next() {
+    if (currentStep === "safety" && blockedBySafety) {
+      setFloorRising(getSkippedFloorRisingMetrics());
+      setStepIndex(steps.indexOf("dashboard"));
+      return;
+    }
+
+    if (currentStep === "chair_stand" && !chairStandGate.canProceed) {
+      setFloorRising(getSkippedFloorRisingMetrics());
+      setStepIndex(steps.indexOf("dashboard"));
+      return;
+    }
+
+    if (currentStep === "motion_gait" && !motionGate.canProceed) {
+      setFloorRising(getSkippedFloorRisingMetrics());
+      setStepIndex(steps.indexOf("dashboard"));
+      return;
+    }
+
     setStepIndex((index) => Math.min(index + 1, steps.length - 1));
   }
 
@@ -143,6 +179,8 @@ export function AssessmentApp() {
         demo.questionnaire.postFallRecoveryConfidence,
     });
     setChairStand(demo.chairStand);
+    setMotion(demo.motion ?? getDemoMotionMetrics());
+    setFloorRising(demo.floorRising ?? getDemoFloorRisingMetrics());
   }
 
   return (
@@ -413,31 +451,152 @@ export function AssessmentApp() {
           </StepPanel>
         )}
 
-        {currentStep === "analytics" && (
+        {currentStep === "motion_gait" && (
           <StepPanel
-            description="The rule-based engine combines the falls efficacy scores, chair stand metrics, and demo motion summary into an ability-confidence profile."
-            icon={<Check aria-hidden size={26} />}
-            title="Screening summary ready"
+            description="Walk at a usual safe pace with the phone carried steadily. Daniel's accelerometer module can replace these demo gait metrics."
+            icon={<PersonStanding aria-hidden size={26} />}
+            title="Motion sensor gait walking test"
           >
-            <SummaryGrid
-              items={[
-                [
-                  "Confidence average",
-                  scoredQuestionnaire.averageScore.toFixed(1),
-                ],
-                [
-                  "Chair stand",
-                  `${chairStand.repetitions} reps in ${chairStand.durationSeconds}s`,
-                ],
-                ["Motion source", motion.source],
-                ["Vision source", getDemoVisionMetrics().source],
-              ]}
-            />
+            {!chairStandGate.canProceed && (
+              <SafetyNotice>
+                Chair stand screening suggests this participant should not
+                continue to gait walking today. Higher-risk testing will be
+                skipped.
+              </SafetyNotice>
+            )}
+            <FormGrid>
+              <TextField
+                label="Gait speed in metres per second"
+                onChange={(value) =>
+                  setMotion((current) => ({
+                    ...current,
+                    gaitSpeedMetersPerSecond: Number(value),
+                    completionStatus: "completed",
+                    source: "manual",
+                  }))
+                }
+                type="number"
+                value={String(motion.gaitSpeedMetersPerSecond ?? 0)}
+              />
+              <TextField
+                label="Stability score"
+                onChange={(value) =>
+                  setMotion((current) => ({
+                    ...current,
+                    stabilityScore: Number(value),
+                    completionStatus: "completed",
+                    source: "manual",
+                  }))
+                }
+                type="number"
+                value={String(motion.stabilityScore)}
+              />
+            </FormGrid>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                className="secondary-action"
+                onClick={() => setMotion(getDemoMotionMetrics())}
+                type="button"
+              >
+                Use demo gait walk
+              </button>
+              <button
+                className="secondary-action"
+                onClick={() =>
+                  setMotion((current) => ({
+                    ...current,
+                    completionStatus: "stopped",
+                    stabilityScore: 0.3,
+                    rhythmConsistency: 0.35,
+                    source: "manual",
+                  }))
+                }
+                type="button"
+              >
+                Mark stopped or unstable
+              </button>
+            </div>
+            {!motionGate.canProceed && (
+              <SafetyNotice>
+                Gait walking suggests caution. The floor-rising test is the
+                highest-risk test and should not be attempted in this flow.
+              </SafetyNotice>
+            )}
+          </StepPanel>
+        )}
+
+        {currentStep === "floor_rising" && (
+          <StepPanel
+            description="Only proceed if earlier screening steps were safe. This is the highest-risk functional test in the MVP."
+            icon={<AlertTriangle aria-hidden size={26} />}
+            title="Floor-rising test"
+          >
+            {!motionGate.canProceed && (
+              <SafetyNotice>
+                Motion gait screening did not pass the safety gate. Floor-rising
+                should be skipped and the dashboard should explain why.
+              </SafetyNotice>
+            )}
+            <FormGrid>
+              <TextField
+                label="Time to rise from floor in seconds"
+                onChange={(value) =>
+                  setFloorRising((current) => ({
+                    ...current,
+                    completionStatus: "completed",
+                    durationSeconds: Number(value),
+                    source: "manual",
+                  }))
+                }
+                type="number"
+                value={String(floorRising.durationSeconds ?? 0)}
+              />
+              <label className="flex min-h-16 items-center gap-3 rounded-md border border-[var(--line)] bg-white p-4">
+                <input
+                  checked={floorRising.requiredAssistance}
+                  className="h-6 w-6"
+                  onChange={(event) =>
+                    setFloorRising((current) => ({
+                      ...current,
+                      requiredAssistance: event.target.checked,
+                      completionStatus: event.target.checked
+                        ? "stopped"
+                        : current.completionStatus,
+                      source: "manual",
+                    }))
+                  }
+                  type="checkbox"
+                />
+                <span>Required assistance or could not complete safely</span>
+              </label>
+            </FormGrid>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                className="secondary-action"
+                onClick={() => setFloorRising(getDemoFloorRisingMetrics())}
+                type="button"
+              >
+                Use demo floor-rising
+              </button>
+              <button
+                className="secondary-action"
+                onClick={() => setFloorRising(getSkippedFloorRisingMetrics())}
+                type="button"
+              >
+                Skip floor-rising
+              </button>
+            </div>
           </StepPanel>
         )}
 
         {currentStep === "dashboard" && (
           <section className="grid gap-5">
+            {stoppedBeforeHigherRisk && (
+              <SafetyNotice>
+                The assessment stopped before one or more higher-risk tests.
+                The dashboard uses completed and demo-safe screening data only.
+              </SafetyNotice>
+            )}
             <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
               <p className="text-base font-semibold text-[var(--primary-dark)]">
                 Ability-confidence dashboard
@@ -450,6 +609,20 @@ export function AssessmentApp() {
                 {analytics.interpretation}
               </p>
             </div>
+            <SummaryGrid
+              items={[
+                ["Confidence average", scoredQuestionnaire.averageScore.toFixed(1)],
+                [
+                  "Chair stand",
+                  `${chairStand.repetitions} reps in ${chairStand.durationSeconds}s`,
+                ],
+                [
+                  "Motion gait",
+                  `${motion.gaitSpeedMetersPerSecond ?? 0} m/s`,
+                ],
+                ["Floor-rising", floorRising.completionStatus],
+              ]}
+            />
             <SummaryGrid
               items={[
                 ["Ability", analytics.abilityBand],
@@ -532,6 +705,52 @@ export function AssessmentApp() {
       </div>
     </main>
   );
+}
+
+function getChairStandGate(
+  chairStand: ChairStandMetrics,
+  blockedBySafety: boolean,
+) {
+  const unsafe =
+    blockedBySafety ||
+    chairStand.completionStatus === "stopped" ||
+    chairStand.movementQuality === "unsafe" ||
+    chairStand.repetitions < 5 ||
+    chairStand.durationSeconds > 20;
+
+  return {
+    canProceed: !unsafe,
+    reason: unsafe
+      ? "Chair stand result does not support moving to the gait walking test."
+      : "Chair stand gate passed.",
+  };
+}
+
+function getMotionGate(motion: MotionMetrics) {
+  const unsafe =
+    motion.completionStatus === "stopped" ||
+    motion.stabilityScore < 0.45 ||
+    motion.rhythmConsistency < 0.5;
+
+  return {
+    canProceed: !unsafe,
+    reason: unsafe
+      ? "Motion gait result does not support moving to floor-rising."
+      : "Motion gait gate passed.",
+  };
+}
+
+function getFloorRisingGate(floorRising: FloorRisingMetrics) {
+  const unsafe =
+    floorRising.completionStatus === "stopped" ||
+    floorRising.requiredAssistance;
+
+  return {
+    canProceed: !unsafe,
+    reason: unsafe
+      ? "Floor-rising was stopped or required assistance."
+      : "Floor-rising gate passed or skipped safely.",
+  };
 }
 
 function Progress({ currentStep }: { currentStep: AssessmentStep }) {

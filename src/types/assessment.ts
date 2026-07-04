@@ -15,7 +15,8 @@ export type AssessmentStep =
   | "demographics"
   | "questionnaire"
   | "chair_stand"
-  | "analytics"
+  | "motion_gait"
+  | "floor_rising"
   | "dashboard"
   | "report";
 
@@ -66,7 +67,16 @@ export type ChairStandMetrics = {
 export type MotionMetrics = {
   stabilityScore: number;
   rhythmConsistency: number;
+  gaitSpeedMetersPerSecond?: number;
+  completionStatus?: "completed" | "stopped" | "demo";
   source: "accelerometer" | "manual" | "demo";
+};
+
+export type FloorRisingMetrics = {
+  completionStatus: "completed" | "stopped" | "skipped" | "demo";
+  durationSeconds?: number;
+  requiredAssistance: boolean;
+  source: "manual" | "demo";
 };
 
 export type VisionMetrics = {
@@ -114,6 +124,7 @@ export type AssessmentSession = {
   questionnaire: FallsEfficacyResult;
   chairStand: ChairStandMetrics;
   motion?: MotionMetrics;
+  floorRising?: FloorRisingMetrics;
   vision?: VisionMetrics;
   analytics?: AbilityConfidenceResult;
   report?: ReportSummary;
