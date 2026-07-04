@@ -182,14 +182,14 @@ export function AssessmentApp() {
   }
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 py-6 md:px-8">
-        <header className="flex flex-col gap-4 border-b border-[var(--line)] pb-5 md:flex-row md:items-center md:justify-between">
+    <main className="min-h-dvh pb-[env(safe-area-inset-bottom)]">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-4 sm:gap-7 sm:px-5 sm:py-6 md:px-8">
+        <header className="flex flex-col gap-4 border-b border-[var(--line)] pb-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-base font-semibold text-[var(--primary-dark)]">
               {PRODUCT_NAME}
             </p>
-            <h1 className="max-w-3xl text-3xl font-semibold leading-tight md:text-5xl">
+            <h1 className="max-w-3xl text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl">
               Ability-confidence screening for community-ready care.
             </h1>
           </div>
@@ -206,7 +206,7 @@ export function AssessmentApp() {
         <Progress currentStep={currentStep} />
 
         {currentStep === "landing" && (
-          <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <section className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-6 shadow-sm">
               <p className="mb-4 text-xl text-[var(--muted)]">
                 {PRODUCT_POSITIONING}
@@ -671,7 +671,7 @@ export function AssessmentApp() {
           </section>
         )}
 
-        <footer className="flex flex-col gap-3 border-t border-[var(--line)] pt-5 md:flex-row md:items-center md:justify-between">
+        <footer className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t border-[var(--line)] bg-[var(--background)] px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:px-0">
           <button
             className="secondary-action"
             disabled={stepIndex === 0}
@@ -681,7 +681,7 @@ export function AssessmentApp() {
             <ArrowLeft aria-hidden size={22} />
             Back
           </button>
-          <div className="text-base text-[var(--muted)]">
+          <div className="order-first text-center text-base text-[var(--muted)] sm:order-none">
             {demoLoaded
               ? "Demo data loaded."
               : "Use demo data for a fast walkthrough."}
@@ -750,7 +750,7 @@ function Progress({ currentStep }: { currentStep: AssessmentStep }) {
   return (
     <nav aria-label="Assessment progress" className="overflow-x-auto">
       <ol className="flex min-w-max gap-2">
-        {steps.map((step) => (
+        {steps.map((step, index) => (
           <li
             className={`rounded-md border px-3 py-2 text-base ${
               step === currentStep
@@ -759,6 +759,7 @@ function Progress({ currentStep }: { currentStep: AssessmentStep }) {
             }`}
             key={step}
           >
+            <span className="sr-only">Step {index + 1}: </span>
             {stepLabels[step]}
           </li>
         ))}
@@ -779,13 +780,15 @@ function StepPanel({
   title: string;
 }) {
   return (
-    <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm md:p-7">
+    <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm sm:p-5 md:p-7">
       <div className="mb-6 flex gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#e8f5f2] text-[var(--primary)]">
           {icon}
         </div>
         <div>
-          <h2 className="text-3xl font-semibold leading-tight">{title}</h2>
+          <h2 className="text-2xl font-semibold leading-tight sm:text-3xl">
+            {title}
+          </h2>
           <p className="mt-2 text-[var(--muted)]">{description}</p>
         </div>
       </div>
@@ -811,7 +814,7 @@ function PathwayPreview() {
       <p className="text-base font-semibold text-[var(--primary-dark)]">
         Guided assessment pathway
       </p>
-      <ol className="mt-4 grid gap-3">
+      <ol className="mt-4 grid gap-3 sm:grid-cols-2">
         {pathway.map((item, index) => (
           <li
             className="flex items-start gap-3 rounded-md border border-[var(--line)] p-3"
@@ -820,7 +823,7 @@ function PathwayPreview() {
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#e8f5f2] text-base font-bold text-[var(--primary-dark)]">
               {index + 1}
             </span>
-            <span className="font-semibold leading-snug">{item}</span>
+            <span className="text-base font-semibold leading-snug">{item}</span>
           </li>
         ))}
       </ol>
@@ -849,14 +852,14 @@ function DashboardSection({
 
 function SummaryGrid({ items }: { items: [string, string][] }) {
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {items.map(([label, value]) => (
         <div
           className="rounded-lg border border-[var(--line)] bg-white p-4"
           key={label}
         >
           <p className="text-base font-semibold text-[var(--muted)]">{label}</p>
-          <p className="mt-2 text-2xl font-semibold capitalize leading-tight">
+          <p className="mt-2 min-w-0 text-xl font-semibold capitalize leading-tight sm:text-2xl">
             {value.replaceAll("_", " ")}
           </p>
         </div>

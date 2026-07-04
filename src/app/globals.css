@@ -20,6 +20,7 @@
 
 html {
   background: var(--background);
+  min-height: 100%;
 }
 
 body {
@@ -28,6 +29,9 @@ body {
   font-family: var(--font-sans);
   font-size: 18px;
   line-height: 1.6;
+  min-height: 100%;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
 }
 
 button,
@@ -54,6 +58,7 @@ input:focus-visible {
   justify-content: center;
   min-height: 3.5rem;
   padding: 0.75rem 1.25rem;
+  text-align: center;
 }
 
 .primary-action {
@@ -73,4 +78,16 @@ input:focus-visible {
 
 .secondary-action:disabled {
   color: #8a9891;
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 17px;
+  }
+
+  .primary-action,
+  .secondary-action {
+    min-height: 3.75rem;
+    width: 100%;
+  }
 }
