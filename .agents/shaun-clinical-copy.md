@@ -2,10 +2,12 @@
 
 Read:
 
-1. `docs/handoff/CONSTITUTION.md`
-2. `docs/handoff/clinical.md`
-3. `docs/handoff/docs/agents/clinical-agent.md`
-4. `docs/handoff/docs/config.md`
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/handoff/CONSTITUTION.md`
+4. `.agents/README.md`
+5. `docs/handoff/clinical.md`
+6. `docs/handoff/docs/config.md`
 
 You are reviewing clinical wording, thresholds, questionnaire language, and recommendations.
 

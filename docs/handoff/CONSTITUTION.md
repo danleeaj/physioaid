@@ -1,10 +1,12 @@
 # Physio-Aid Clinical and Product Constitution
 
-This document defines the non-negotiable clinical and product direction for Physio-Aid / Physi-ad.
+This document defines the non-negotiable clinical and product direction for Physio-Aid.
 
 ## Constitutional rule
 
-The uploaded Shaun brief is the source of truth. If anything else conflicts with the brief, the brief wins.
+The uploaded Shaun brief is the clinical source of truth. If clinical claims, safety language, or recommendation wording conflicts with the brief, the brief wins.
+
+Current implementation status: the guided demo flow now includes chair stand, motion sensor gait walking, and floor-rising, each with manual/demo fallback. This expands the implementation sequence without changing the decision-support boundaries or clinical-claims discipline from the brief.
 
 ## Project identity
 
@@ -56,8 +58,8 @@ The central innovation is the ability–confidence profile:
 4. Demographic information
 5. Falls efficacy questionnaire
 6. Chair stand assessment
-7. Smartphone accelerometer / motion sensor input
-8. Computer vision / sensor analytics
+7. Motion sensor gait walking test
+8. Floor-rising test
 9. Ability–confidence analytics engine
 10. Risk stratification
 11. Dashboard + report + recommendations
@@ -83,7 +85,7 @@ Falls efficacy is treated as a confidence-related construct relevant to rehabili
 
 ### Functional decline
 
-The MVP uses chair stand as the core functional movement assessment. Gait speed and floor rising are optional extensions only.
+The MVP uses chair stand as the core functional movement assessment. The current guided demo also includes motion sensor gait walking and floor-rising, with safety gates and manual/demo fallback paths.
 
 ### Healthspan
 
@@ -101,7 +103,7 @@ The MVP should capture:
 - optional accelerometer stability indicators
 - whether the test was stopped or unsafe
 
-The MVP must include a manual/demo fallback if camera or motion sensors fail.
+The MVP must include a manual/demo fallback if camera or motion sensors fail. If chair stand is stopped or unsafe, the app must not proceed to gait walking. If gait walking is stopped or unstable, the app must not proceed to floor-rising.
 
 ## Decision-support boundaries
 
@@ -151,8 +153,8 @@ If screening indicates concern:
 
 - Shaun: Clinical Product Owner and final clinical reviewer. Owns clinical framework, falls efficacy, questionnaire, safety, recommendations, literature, and clinical review. Shaun does not need to operate Codex directly.
 - Wayne: App flow, UX, rough UI, integration, and repo coordination. Wayne is not the sole project manager.
-- Daniel: Motion sensor / accelerometer module.
-- Ezekiel: Computer vision / chair stand module.
+- Daniel: Motion sensor / accelerometer / gyroscope module for chair stand and gait walking summaries.
+- Ezekiel: Floor-rising computer vision module with camera/manual/demo fallback.
 - Whole team: demo and submission quality.
 
 ## Build constraints

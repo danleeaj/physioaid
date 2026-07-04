@@ -4,6 +4,14 @@ Physio-Aid is a web-based physiotherapy support platform focused on prolonging h
 
 The MVP combines safety screening, emergency contact setup, falls efficacy profiling, chair stand assessment, motion/CV-derived metrics, and a rule-based ability-confidence profile. It provides decision support and care recommendations. It is not a diagnosis and does not replace assessment by a qualified healthcare professional.
 
+## Source Of Truth
+
+Repo: `https://github.com/wlcsmmm/physioaid`
+
+GitHub `main` and the linked Vercel deployment are the source of truth for teammate work and demo verification.
+
+Do not rely on an old local dev server to decide whether the app is current. Vercel/GitHub should be trusted for current state.
+
 ## Run Locally
 
 ```bash
@@ -34,10 +42,17 @@ WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 npm run dev
 Use the `Load Mr Tan demo` button, then walk through:
 
 ```txt
-Landing -> Safety -> Emergency Contact -> Demographics -> Falls Efficacy -> Chair Stand -> Motion Sensor Gait Walking -> Floor-Rising -> Dashboard -> Report
+Landing -> Safety + Consent -> Emergency Contact -> Demographics -> Falls Efficacy / Confidence -> Chair Stand -> Motion Sensor Gait Walking -> Floor-Rising -> Ability-Confidence Dashboard -> Report
 ```
 
 The demo remains usable even before camera or motion permissions are implemented.
+
+The flow is safety-gated:
+
+- If safety screening fails, physical testing stops and the app routes to the dashboard.
+- If chair stand is stopped, unsafe, or too poor, the user must not proceed to gait walking.
+- If gait walking is stopped or unstable, the user must not proceed to floor-rising.
+- Floor-rising is the highest-risk test and must keep skip, manual, and demo fallbacks.
 
 ## Module Ownership
 
@@ -54,15 +69,18 @@ Daniel owns motion sensor and accelerometer work:
 
 ```txt
 src/lib/sensors/**
-src/types/assessment.ts only when coordinating contract changes
+src/types/motion.ts
+src/components/assessment/MotionSensorStatus.tsx
+src/types/assessment.ts only when coordinating necessary motion contract changes
 ```
 
-Ezekiel owns computer vision and chair stand detection:
+Ezekiel owns floor-rising computer vision work:
 
 ```txt
 src/lib/vision/**
-src/components/assessment/** only when integrating camera UI with Wayne
-src/types/assessment.ts only when coordinating contract changes
+src/components/assessment/CameraSetup.tsx
+src/components/assessment/** only for the floor-rising camera screen
+src/types/assessment.ts only when coordinating necessary floor-rising contract changes
 ```
 
 Shared files require team notice before changes:
@@ -82,14 +100,26 @@ Ready-to-use teammate prompts live in `.agents/`.
 Use one branch per module:
 
 ```txt
-feature/wayne-app-flow
-feature/daniel-motion-sensor
-feature/ezekiel-chair-stand-cv
+feature/wayne-pwa-flow
+feature/daniel-motion-tests
+feature/ezekiel-floor-rising-cv
 feature/clinical-copy-rules
-feature/report-dashboard
+feature/qa-demo-readiness
 ```
 
-Do not work directly on `main` after the initial scaffold.
+Do not work directly on `main`.
+
+## For Teammates
+
+1. Clone `https://github.com/wlcsmmm/physioaid`.
+2. Create your assigned feature branch.
+3. Read `AGENTS.md`.
+4. Read `.agents/README.md`.
+5. Read your role prompt in `.agents/`.
+6. Read `docs/handoff/CONSTITUTION.md`.
+7. For motion or camera work, also read `docs/motion-vision-scaffold.md`.
+8. Run `npm run lint` and `npm run build` before opening a PR.
+9. Open a pull request into `main`.
 
 ## PR Checklist
 
@@ -112,10 +142,12 @@ Before merge:
 
 ## Handoff Docs
 
-The Codex handoff pack is copied into:
+For new work, start with:
 
-```txt
-docs/handoff/
-```
+1. `AGENTS.md`
+2. `.agents/README.md`
+3. The relevant role prompt in `.agents/`
+4. `docs/handoff/CONSTITUTION.md`
+5. `docs/motion-vision-scaffold.md` for motion or camera work
 
-Start with `docs/handoff/START_HERE.md` and `docs/handoff/CONSTITUTION.md`.
+The older `docs/handoff/START_HERE.md`, `docs/handoff/CODEX_HANDOFF.md`, `docs/handoff/docs/orchestrator.md`, and `docs/handoff/docs/agents/*.md` files are compatibility pointers only.

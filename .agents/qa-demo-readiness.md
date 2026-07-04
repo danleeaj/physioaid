@@ -2,9 +2,11 @@
 
 Read:
 
-1. `docs/handoff/CONSTITUTION.md`
-2. `docs/handoff/docs/agents/qa-agent.md`
-3. `docs/handoff/demo.md`
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/handoff/CONSTITUTION.md`
+4. `.agents/README.md`
+5. `docs/handoff/demo.md`
 
 You are checking demo readiness.
 

@@ -35,7 +35,7 @@ Falls efficacy captures confidence and perceived ability. For the MVP, use four 
 
 ### Functional decline
 
-Chair stand is the core MVP functional test. It represents a simple community-ready indicator of lower-limb functional ability. Gait speed and floor rising are optional extensions.
+Chair stand is the core MVP functional test. It represents a simple community-ready indicator of lower-limb functional ability. The current guided demo also includes motion sensor gait walking and floor-rising as safety-gated tests with manual/demo fallbacks.
 
 ### Ability–confidence mismatch
 

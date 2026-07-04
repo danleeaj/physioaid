@@ -1,19 +1,26 @@
 # Agent Instructions
 
-Read these before coding:
+Repo: `https://github.com/wlcsmmm/physioaid`
 
-1. `docs/handoff/START_HERE.md`
+GitHub `main` and the linked Vercel deployment are the source of truth. Do not trust stale local dev servers for current UI state.
+
+## Read First
+
+1. `README.md`
 2. `docs/handoff/CONSTITUTION.md`
-3. `docs/handoff/CODEX_HANDOFF.md`
-4. The relevant agent brief in `docs/handoff/docs/agents/`
+3. `.agents/README.md`
+4. The relevant teammate prompt in `.agents/`
+5. `docs/motion-vision-scaffold.md` for motion or camera work
 
-For teammate-ready prompts, use `.agents/`:
+## Current Flow
 
-- `.agents/wayne-pwa-flow.md`
-- `.agents/daniel-motion-tests.md`
-- `.agents/ezekiel-floor-rising-cv.md`
-- `.agents/shaun-clinical-copy.md`
-- `.agents/qa-demo-readiness.md`
+`Safety + Consent -> Emergency Contact -> Demographics -> Falls Efficacy / Confidence -> Chair Stand -> Motion Sensor Gait Walking -> Floor-Rising -> Ability-Confidence Dashboard`
+
+The flow is safety-gated. Unsafe or stopped physical tests must not proceed to higher-risk tests.
+
+## Work Rules
+
+Use one feature branch per teammate. Do not work directly on `main`.
 
 Respect module ownership. Do not change shared contracts, clinical copy, thresholds, or package dependencies without calling out the change.
 

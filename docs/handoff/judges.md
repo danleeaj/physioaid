@@ -96,7 +96,7 @@ Not yet. The MVP is a hackathon prototype aligned with physiotherapy concepts an
 
 ### Why chair stand?
 
-Chair stand is simple, recognisable, feasible in homes and community settings, and relevant to lower-limb function. For the MVP, it is the core functional test. Gait speed and floor rising are optional extensions.
+Chair stand is simple, recognisable, feasible in homes and community settings, and relevant to lower-limb function. For the MVP, it is the core functional test. The demo then adds safety-gated gait walking and floor-rising to show how Physio-Aid can escalate assessment depth while preserving fallbacks.
 
 ### Why combine confidence and ability?
 
