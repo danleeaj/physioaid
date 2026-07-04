@@ -5,8 +5,10 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  CheckCircle2,
   ClipboardList,
   Download,
+  FileText,
   HeartPulse,
   Link as LinkIcon,
   PersonStanding,
@@ -14,6 +16,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { CameraSetup } from "@/components/assessment/CameraSetup";
+import { ChairStandDemo } from "@/components/assessment/demos/ChairStandDemo";
+import { FloorRisingDemo } from "@/components/assessment/demos/FloorRisingDemo";
+import { GaitWalkDemo } from "@/components/assessment/demos/GaitWalkDemo";
+import { MotionSensorStatus } from "@/components/assessment/MotionSensorStatus";
+import { TestStartPanel } from "@/components/assessment/TestStartPanel";
 import { careLinkageOptions } from "@/content/care-linkage";
 import { fallsEfficacyQuestions, profileCopy } from "@/content/clinical-copy";
 import {
@@ -28,16 +36,24 @@ import {
   getDemoFloorRisingMetrics,
   getSkippedFloorRisingMetrics,
 } from "@/lib/functional-tests/floor-rising";
+import {
+  getChairStandGate,
+  getFloorRisingGate,
+  getMotionGate,
+} from "@/lib/functional-tests/gates";
 import { scoreFallsEfficacy } from "@/lib/questionnaire";
 import { getDemoMotionMetrics } from "@/lib/sensors/motion-summary";
 import { getDemoChairStandMetrics } from "@/lib/vision/chair-stand";
+import { getCameraFloorRisingPlaceholder } from "@/lib/vision/floor-rising";
 import type {
   AssessmentStep,
+  AbilityConfidenceProfile,
   ChairStandMetrics,
   Demographics,
   EmergencyContact,
   FloorRisingMetrics,
   MotionMetrics,
+  RiskCategory,
   SafetyScreenResult,
 } from "@/types/assessment";
 
@@ -73,9 +89,17 @@ type QuestionnaireDraft = {
   postFallRecoveryConfidence: number;
 };
 
+type PhysicalTestPhase = "demo" | "start" | "manual";
+
 export function AssessmentApp() {
   const [stepIndex, setStepIndex] = useState(0);
   const [demoLoaded, setDemoLoaded] = useState(false);
+  const [chairStandPhase, setChairStandPhase] =
+    useState<PhysicalTestPhase>("demo");
+  const [gaitPhase, setGaitPhase] = useState<PhysicalTestPhase>("demo");
+  const [floorRisingPhase, setFloorRisingPhase] =
+    useState<PhysicalTestPhase>("demo");
+  const [gaitDistanceMeters, setGaitDistanceMeters] = useState(4);
   const [safety, setSafety] = useState<SafetyScreenResult>({
     dizziness: false,
     breathlessness: false,
@@ -136,6 +160,15 @@ export function AssessmentApp() {
     !chairStandGate.canProceed ||
     !motionGate.canProceed ||
     !floorRisingGate.canProceed;
+  const currentPhysicalPhase =
+    currentStep === "chair_stand"
+      ? chairStandPhase
+      : currentStep === "motion_gait"
+        ? gaitPhase
+        : currentStep === "floor_rising"
+          ? floorRisingPhase
+          : undefined;
+  const isPhysicalDemoScreen = currentPhysicalPhase === "demo";
 
   function next() {
     if (currentStep === "safety" && blockedBySafety) {
@@ -154,6 +187,18 @@ export function AssessmentApp() {
       setFloorRising(getSkippedFloorRisingMetrics());
       setStepIndex(steps.indexOf("dashboard"));
       return;
+    }
+
+    if (currentStep === "questionnaire") {
+      setChairStandPhase("demo");
+    }
+
+    if (currentStep === "chair_stand") {
+      setGaitPhase("demo");
+    }
+
+    if (currentStep === "motion_gait") {
+      setFloorRisingPhase("demo");
     }
 
     setStepIndex((index) => Math.min(index + 1, steps.length - 1));
@@ -179,6 +224,44 @@ export function AssessmentApp() {
     setChairStand(demo.chairStand);
     setMotion(demo.motion ?? getDemoMotionMetrics());
     setFloorRising(demo.floorRising ?? getDemoFloorRisingMetrics());
+    setChairStandPhase("demo");
+    setGaitPhase("demo");
+    setFloorRisingPhase("demo");
+  }
+
+  function skipToDashboardWithFloorSkipped() {
+    setFloorRising(getSkippedFloorRisingMetrics());
+    setStepIndex(steps.indexOf("dashboard"));
+  }
+
+  function markChairStoppedOrUnsafe() {
+    setChairStand((current) => ({
+      ...current,
+      completionStatus: "stopped",
+      movementQuality: "unsafe",
+    }));
+    skipToDashboardWithFloorSkipped();
+  }
+
+  function markGaitStoppedOrUnstable() {
+    setMotion((current) => ({
+      ...current,
+      completionStatus: "stopped",
+      stabilityScore: 0.3,
+      rhythmConsistency: 0.35,
+      source: "manual",
+    }));
+    skipToDashboardWithFloorSkipped();
+  }
+
+  function startGaitCountdown() {
+    setMotion({
+      stabilityScore: 0.62,
+      rhythmConsistency: 0.58,
+      gaitSpeedMetersPerSecond: Number((gaitDistanceMeters / 5).toFixed(2)),
+      completionStatus: "demo",
+      source: "demo",
+    });
   }
 
   return (
@@ -186,12 +269,14 @@ export function AssessmentApp() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-4 sm:gap-7 sm:px-5 sm:py-6 md:px-8">
         <header className="flex flex-col gap-4 border-b border-[var(--line)] pb-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-base font-semibold text-[var(--primary-dark)]">
-              {PRODUCT_NAME}
-            </p>
-            <h1 className="max-w-3xl text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl">
+            <p className="eyebrow">{PRODUCT_NAME}</p>
+            <h1 className="mt-2 max-w-3xl text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl">
               Ability-confidence screening for community-ready care.
             </h1>
+            <p className="mt-3 max-w-2xl text-base text-[var(--muted)] sm:text-lg">
+              A guided, safety-gated assessment for movement ability,
+              confidence, and practical follow-up.
+            </p>
           </div>
           <button
             className="primary-action"
@@ -207,14 +292,28 @@ export function AssessmentApp() {
 
         {currentStep === "landing" && (
           <section className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-6 shadow-sm">
+            <div className="panel-card p-6 sm:p-7">
               <p className="mb-4 text-xl text-[var(--muted)]">
                 {PRODUCT_POSITIONING}
               </p>
-              <p className="mb-6 text-2xl font-semibold leading-snug">
+              <p className="mb-6 text-2xl font-semibold leading-snug sm:text-3xl">
                 Understand movement, confidence, and care needs before a fall
                 happens.
               </p>
+              <div className="mb-6 grid gap-3 sm:grid-cols-3">
+                {[
+                  ["Safe", "screen first"],
+                  ["Guided", "one step at a time"],
+                  ["Actionable", "care linkage"],
+                ].map(([label, value]) => (
+                  <div className="quiet-card p-4" key={label}>
+                    <p className="text-base font-bold text-[var(--primary-dark)]">
+                      {label}
+                    </p>
+                    <p className="text-base text-[var(--muted)]">{value}</p>
+                  </div>
+                ))}
+              </div>
               <p className="mb-6 text-base text-[var(--muted)]">
                 {DECISION_SUPPORT_DISCLAIMER}
               </p>
@@ -381,24 +480,73 @@ export function AssessmentApp() {
           </StepPanel>
         )}
 
-        {currentStep === "chair_stand" && (
-          <StepPanel
-            description="Use a stable chair, clear the surrounding area, and stop if you feel unwell. Camera and sensor modules can replace this demo input later."
-            icon={<Activity aria-hidden size={26} />}
-            title="Chair stand assessment"
+        {currentStep === "chair_stand" && chairStandPhase === "demo" && (
+          <ChairStandDemo
+            onContinue={() => setChairStandPhase("start")}
+            onUseDemo={() => {
+              setChairStand(getDemoChairStandMetrics());
+              setChairStandPhase("start");
+            }}
+          />
+        )}
+
+        {currentStep === "chair_stand" && chairStandPhase === "start" && (
+          <TestStartPanel
+            fallbackActions={[
+              {
+                label: "Enter manually",
+                onClick: () => setChairStandPhase("manual"),
+              },
+              {
+                label: "Use demo",
+                onClick: () => setChairStand(getDemoChairStandMetrics()),
+              },
+              {
+                label: "Mark stopped or unsafe",
+                onClick: markChairStoppedOrUnsafe,
+              },
+            ]}
+            onPrimary={() => setChairStand(getDemoChairStandMetrics())}
+            primaryLabel="Start 30s test"
+            resultItems={[
+              ["Reps", `${chairStand.repetitions}`],
+              ["Seconds", `${chairStand.durationSeconds}`],
+              [
+                "Movement quality",
+                chairStand.movementQuality?.replaceAll("_", " ") ??
+                  "not assessed",
+              ],
+            ].map(([label, value]) => ({ label, value }))}
+            safetyInstruction="Use a stable chair, keep both feet flat, and stop if you feel dizzy, breathless, or unsafe."
+            statusItems={[
+              { label: "Sensor", value: "Sensor ready" },
+              { label: "Camera", value: "Camera optional" },
+            ]}
+            title="Chair stand start"
           >
             {blockedBySafety && (
               <SafetyNotice>
-                Safety screening found a concern. This screen is showing demo
-                data only.
+                Safety screening found a concern. Continue with demo data only
+                or go to the dashboard.
               </SafetyNotice>
             )}
+          </TestStartPanel>
+        )}
+
+        {currentStep === "chair_stand" && chairStandPhase === "manual" && (
+          <StepPanel
+            description="Use this fallback if the guided test cannot be completed with the available sensors."
+            icon={<Activity aria-hidden size={26} />}
+            title="Enter chair stand result"
+          >
+            <CameraSetup />
             <FormGrid>
               <TextField
                 label="Repetitions"
                 onChange={(value) =>
                   setChairStand((current) => ({
                     ...current,
+                    completionStatus: "completed",
                     repetitions: Number(value),
                     source: "manual",
                   }))
@@ -411,6 +559,7 @@ export function AssessmentApp() {
                 onChange={(value) =>
                   setChairStand((current) => ({
                     ...current,
+                    completionStatus: "completed",
                     durationSeconds: Number(value),
                     source: "manual",
                   }))
@@ -422,6 +571,13 @@ export function AssessmentApp() {
             <div className="mt-4 flex flex-wrap gap-3">
               <button
                 className="secondary-action"
+                onClick={() => setChairStandPhase("start")}
+                type="button"
+              >
+                Back to guided start
+              </button>
+              <button
+                className="secondary-action"
                 onClick={() => setChairStand(getDemoChairStandMetrics())}
                 type="button"
               >
@@ -429,13 +585,7 @@ export function AssessmentApp() {
               </button>
               <button
                 className="secondary-action"
-                onClick={() =>
-                  setChairStand((current) => ({
-                    ...current,
-                    completionStatus: "stopped",
-                    movementQuality: "unsafe",
-                  }))
-                }
+                onClick={markChairStoppedOrUnsafe}
                 type="button"
               >
                 Mark stopped or unsafe
@@ -444,11 +594,54 @@ export function AssessmentApp() {
           </StepPanel>
         )}
 
-        {currentStep === "motion_gait" && (
-          <StepPanel
-            description="Walk at a usual safe pace with the phone carried steadily. Daniel's accelerometer module can replace these demo gait metrics."
-            icon={<PersonStanding aria-hidden size={26} />}
-            title="Motion sensor gait walking test"
+        {currentStep === "motion_gait" && gaitPhase === "demo" && (
+          <GaitWalkDemo
+            onContinue={() => setGaitPhase("start")}
+            onUseDemo={() => {
+              setMotion(getDemoMotionMetrics());
+              setGaitPhase("start");
+            }}
+          />
+        )}
+
+        {currentStep === "motion_gait" && gaitPhase === "start" && (
+          <TestStartPanel
+            fallbackActions={[
+              {
+                label: "Enter manually",
+                onClick: () => setGaitPhase("manual"),
+              },
+              {
+                label: "Use demo",
+                onClick: () => setMotion(getDemoMotionMetrics()),
+              },
+              {
+                label: "Mark stopped or unstable",
+                onClick: markGaitStoppedOrUnstable,
+              },
+            ]}
+            onPrimary={startGaitCountdown}
+            primaryLabel="Start countdown"
+            resultItems={[
+              {
+                label: "Gait speed",
+                value: `${motion.gaitSpeedMetersPerSecond ?? 0} m/s`,
+              },
+              {
+                label: "Rhythm",
+                value: `${Math.round(motion.rhythmConsistency * 100)}%`,
+              },
+              {
+                label: "Stability",
+                value: `${Math.round(motion.stabilityScore * 100)}%`,
+              },
+            ]}
+            safetyInstruction="Walk at your usual safe pace with the phone held steadily or placed in your pocket."
+            statusItems={[
+              { label: "Motion", value: "Motion sensor ready" },
+              { label: "Distance", value: `${gaitDistanceMeters}m selected` },
+            ]}
+            title="Gait walk start"
           >
             {!chairStandGate.canProceed && (
               <SafetyNotice>
@@ -457,6 +650,21 @@ export function AssessmentApp() {
                 skipped.
               </SafetyNotice>
             )}
+            <MotionSensorStatus />
+            <DistanceSelector
+              onChange={setGaitDistanceMeters}
+              value={gaitDistanceMeters}
+            />
+          </TestStartPanel>
+        )}
+
+        {currentStep === "motion_gait" && gaitPhase === "manual" && (
+          <StepPanel
+            description="Use this fallback if motion sensing is denied or unavailable."
+            icon={<PersonStanding aria-hidden size={26} />}
+            title="Enter gait walk result"
+          >
+            <MotionSensorStatus />
             <FormGrid>
               <TextField
                 label="Gait speed in metres per second"
@@ -488,6 +696,13 @@ export function AssessmentApp() {
             <div className="mt-4 flex flex-wrap gap-3">
               <button
                 className="secondary-action"
+                onClick={() => setGaitPhase("start")}
+                type="button"
+              >
+                Back to guided start
+              </button>
+              <button
+                className="secondary-action"
                 onClick={() => setMotion(getDemoMotionMetrics())}
                 type="button"
               >
@@ -495,15 +710,7 @@ export function AssessmentApp() {
               </button>
               <button
                 className="secondary-action"
-                onClick={() =>
-                  setMotion((current) => ({
-                    ...current,
-                    completionStatus: "stopped",
-                    stabilityScore: 0.3,
-                    rhythmConsistency: 0.35,
-                    source: "manual",
-                  }))
-                }
+                onClick={markGaitStoppedOrUnstable}
                 type="button"
               >
                 Mark stopped or unstable
@@ -518,11 +725,55 @@ export function AssessmentApp() {
           </StepPanel>
         )}
 
-        {currentStep === "floor_rising" && (
-          <StepPanel
-            description="Only proceed if earlier screening steps were safe. This is the highest-risk functional test in the MVP."
-            icon={<AlertTriangle aria-hidden size={26} />}
-            title="Floor-rising test"
+        {currentStep === "floor_rising" && floorRisingPhase === "demo" && (
+          <FloorRisingDemo
+            onContinue={() => setFloorRisingPhase("start")}
+            onSkip={skipToDashboardWithFloorSkipped}
+            onUseDemo={() => {
+              setFloorRising(getDemoFloorRisingMetrics());
+              setFloorRisingPhase("start");
+            }}
+          />
+        )}
+
+        {currentStep === "floor_rising" && floorRisingPhase === "start" && (
+          <TestStartPanel
+            fallbackActions={[
+              {
+                label: "Skip this test",
+                onClick: skipToDashboardWithFloorSkipped,
+                tone: "primary",
+              },
+              {
+                label: "Enter manually",
+                onClick: () => setFloorRisingPhase("manual"),
+              },
+              {
+                label: "Use demo",
+                onClick: () => setFloorRising(getDemoFloorRisingMetrics()),
+              },
+            ]}
+            onPrimary={() => setFloorRising(getCameraFloorRisingPlaceholder())}
+            primaryLabel="Start when ready"
+            resultItems={[
+              ["Completed", floorRising.completionStatus],
+              [
+                "Seconds",
+                floorRising.durationSeconds !== undefined
+                  ? `${floorRising.durationSeconds}`
+                  : "not recorded",
+              ],
+              [
+                "Assistance",
+                floorRising.requiredAssistance ? "required" : "not required",
+              ],
+            ].map(([label, value]) => ({ label, value }))}
+            safetyInstruction="Only continue if someone is nearby, your full body is visible, and the floor area is clear."
+            statusItems={[
+              { label: "Camera", value: "Preview scaffold visible" },
+              { label: "Safety option", value: "Skip available" },
+            ]}
+            title="Floor-rising start"
           >
             {!motionGate.canProceed && (
               <SafetyNotice>
@@ -530,6 +781,17 @@ export function AssessmentApp() {
                 should be skipped and the dashboard should explain why.
               </SafetyNotice>
             )}
+            <CameraSetup />
+          </TestStartPanel>
+        )}
+
+        {currentStep === "floor_rising" && floorRisingPhase === "manual" && (
+          <StepPanel
+            description="Use this fallback if camera setup is denied or unavailable. Skipping remains available."
+            icon={<AlertTriangle aria-hidden size={26} />}
+            title="Enter floor-rising result"
+          >
+            <CameraSetup />
             <FormGrid>
               <TextField
                 label="Time to rise from floor in seconds"
@@ -554,7 +816,10 @@ export function AssessmentApp() {
                       requiredAssistance: event.target.checked,
                       completionStatus: event.target.checked
                         ? "stopped"
-                        : current.completionStatus,
+                        : "completed",
+                      movementQuality: event.target.checked
+                        ? "unsafe"
+                        : "not_assessed",
                       source: "manual",
                     }))
                   }
@@ -566,6 +831,13 @@ export function AssessmentApp() {
             <div className="mt-4 flex flex-wrap gap-3">
               <button
                 className="secondary-action"
+                onClick={() => setFloorRisingPhase("start")}
+                type="button"
+              >
+                Back to guided start
+              </button>
+              <button
+                className="secondary-action"
                 onClick={() => setFloorRising(getDemoFloorRisingMetrics())}
                 type="button"
               >
@@ -573,7 +845,7 @@ export function AssessmentApp() {
               </button>
               <button
                 className="secondary-action"
-                onClick={() => setFloorRising(getSkippedFloorRisingMetrics())}
+                onClick={skipToDashboardWithFloorSkipped}
                 type="button"
               >
                 Skip floor-rising
@@ -590,45 +862,63 @@ export function AssessmentApp() {
                 The dashboard uses completed and demo-safe screening data only.
               </SafetyNotice>
             )}
-            <div className="rounded-lg border border-[var(--line)] bg-white p-6 shadow-sm">
-              <p className="text-base font-semibold text-[var(--primary-dark)]">
-                Ability-confidence dashboard
-              </p>
-              <h2 className="mt-2 text-3xl font-semibold md:text-4xl">
-                {demographics.displayName || "Demo participant"},{" "}
-                {demographics.age}
-              </h2>
-              <p className="mt-3 max-w-3xl text-[var(--muted)]">
-                {analytics.interpretation}
-              </p>
+            <div className="panel-card grid gap-5 p-6 sm:p-7 lg:grid-cols-[1.15fr_0.85fr]">
+              <div>
+                <p className="eyebrow">Ability-confidence dashboard</p>
+                <h2 className="mt-2 text-3xl font-semibold leading-tight md:text-4xl">
+                  {demographics.displayName || "Demo participant"},{" "}
+                  {demographics.age}
+                </h2>
+                <p className="mt-3 max-w-3xl text-[var(--muted)]">
+                  {analytics.interpretation}
+                </p>
+              </div>
+              <div className="quiet-card bg-[var(--surface-muted)] p-5">
+                <p className="text-base font-semibold text-[var(--muted-strong)]">
+                  Functional-falls risk
+                </p>
+                <p className="mt-2 text-4xl font-semibold capitalize leading-none">
+                  {analytics.riskCategory}
+                </p>
+                <p className="mt-3 text-base text-[var(--muted)]">
+                  {getRiskSupportCopy(analytics.riskCategory)}
+                </p>
+              </div>
             </div>
-            <SummaryGrid
-              items={[
-                ["Confidence average", scoredQuestionnaire.averageScore.toFixed(1)],
-                [
-                  "Chair stand",
-                  `${chairStand.repetitions} reps in ${chairStand.durationSeconds}s`,
-                ],
-                [
-                  "Motion gait",
-                  `${motion.gaitSpeedMetersPerSecond ?? 0} m/s`,
-                ],
-                ["Floor-rising", floorRising.completionStatus],
-              ]}
-            />
             <SummaryGrid
               items={[
                 ["Ability", analytics.abilityBand],
                 ["Confidence", analytics.confidenceBand],
-                ["Profile", profileCopy[analytics.profile].title],
-                ["Functional-falls risk", analytics.riskCategory],
+                ["Confidence average", scoredQuestionnaire.averageScore.toFixed(1)],
+                [
+                  "Chair stand",
+                  `${chairStand.repetitions} reps / ${chairStand.durationSeconds}s`,
+                ],
               ]}
             />
+            <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+              <DashboardSection title="Ability-confidence profile">
+                <ProfileMatrix activeProfile={analytics.profile} />
+              </DashboardSection>
+              <DashboardSection title={profileCopy[analytics.profile].title}>
+                <p className="text-[var(--muted)]">{analytics.interpretation}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <MetricRow
+                    label="Motion gait"
+                    value={`${motion.gaitSpeedMetersPerSecond ?? 0} m/s`}
+                  />
+                  <MetricRow
+                    label="Floor-rising"
+                    value={floorRising.completionStatus}
+                  />
+                </div>
+              </DashboardSection>
+            </div>
             <div className="grid gap-5 lg:grid-cols-2">
               <DashboardSection title="Care recommendations">
                 {analytics.recommendations.map((recommendation) => (
                   <div
-                    className="rounded-md border border-[var(--line)] p-4"
+                    className="quiet-card p-4"
                     key={recommendation.id}
                   >
                     <p className="font-semibold">{recommendation.title}</p>
@@ -641,7 +931,7 @@ export function AssessmentApp() {
               <DashboardSection title="Care linkage">
                 {careLinkageOptions.map((option) => (
                   <div
-                    className="flex gap-3 rounded-md border border-[var(--line)] p-4"
+                    className="quiet-card flex gap-3 p-4"
                     key={option.id}
                   >
                     <LinkIcon
@@ -659,13 +949,14 @@ export function AssessmentApp() {
                 ))}
               </DashboardSection>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-5">
+            <div className="quiet-card p-5">
               <p className="mb-4 text-base text-[var(--muted)]">
                 {DECISION_SUPPORT_DISCLAIMER}
               </p>
               <Link className="primary-action w-fit" href="/report/demo">
-                <Download aria-hidden size={22} />
+                <FileText aria-hidden size={22} />
                 Open report
+                <Download aria-hidden size={20} />
               </Link>
             </div>
           </section>
@@ -688,11 +979,12 @@ export function AssessmentApp() {
           </div>
           <button
             className="primary-action"
-            disabled={stepIndex === steps.length - 1}
+            disabled={stepIndex === steps.length - 1 || isPhysicalDemoScreen}
             onClick={next}
             type="button"
           >
-            Next <ArrowRight aria-hidden size={22} />
+            {isPhysicalDemoScreen ? "Continue above" : "Next"}{" "}
+            <ArrowRight aria-hidden size={22} />
           </button>
         </footer>
       </div>
@@ -700,66 +992,32 @@ export function AssessmentApp() {
   );
 }
 
-function getChairStandGate(
-  chairStand: ChairStandMetrics,
-  blockedBySafety: boolean,
-) {
-  const unsafe =
-    blockedBySafety ||
-    chairStand.completionStatus === "stopped" ||
-    chairStand.movementQuality === "unsafe" ||
-    chairStand.repetitions < 5 ||
-    chairStand.durationSeconds > 20;
-
-  return {
-    canProceed: !unsafe,
-    reason: unsafe
-      ? "Chair stand result does not support moving to the gait walking test."
-      : "Chair stand gate passed.",
-  };
-}
-
-function getMotionGate(motion: MotionMetrics) {
-  const unsafe =
-    motion.completionStatus === "stopped" ||
-    motion.stabilityScore < 0.45 ||
-    motion.rhythmConsistency < 0.5;
-
-  return {
-    canProceed: !unsafe,
-    reason: unsafe
-      ? "Motion gait result does not support moving to floor-rising."
-      : "Motion gait gate passed.",
-  };
-}
-
-function getFloorRisingGate(floorRising: FloorRisingMetrics) {
-  const unsafe =
-    floorRising.completionStatus === "stopped" ||
-    floorRising.requiredAssistance;
-
-  return {
-    canProceed: !unsafe,
-    reason: unsafe
-      ? "Floor-rising was stopped or required assistance."
-      : "Floor-rising gate passed or skipped safely.",
-  };
-}
-
 function Progress({ currentStep }: { currentStep: AssessmentStep }) {
+  const currentIndex = steps.indexOf(currentStep);
+
   return (
     <nav aria-label="Assessment progress" className="overflow-x-auto">
       <ol className="flex min-w-max gap-2">
         {steps.map((step, index) => (
           <li
-            className={`rounded-md border px-3 py-2 text-base ${
+            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-base ${
               step === currentStep
                 ? "border-[var(--primary)] bg-white font-semibold text-[var(--primary-dark)]"
-                : "border-[var(--line)] text-[var(--muted)]"
+                : index < currentIndex
+                  ? "border-[var(--line)] bg-[var(--primary-soft)] text-[var(--primary-dark)]"
+                  : "border-[var(--line)] bg-white/70 text-[var(--muted)]"
             }`}
             key={step}
           >
             <span className="sr-only">Step {index + 1}: </span>
+            {index < currentIndex ? (
+              <CheckCircle2 aria-hidden size={18} />
+            ) : (
+              <span
+                aria-hidden
+                className="h-2.5 w-2.5 rounded-full bg-current opacity-55"
+              />
+            )}
             {stepLabels[step]}
           </li>
         ))}
@@ -780,9 +1038,9 @@ function StepPanel({
   title: string;
 }) {
   return (
-    <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm sm:p-5 md:p-7">
+    <section className="panel-card p-4 sm:p-5 md:p-7">
       <div className="mb-6 flex gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#e8f5f2] text-[var(--primary)]">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[var(--primary-soft)] text-[var(--primary)]">
           {icon}
         </div>
         <div>
@@ -810,17 +1068,15 @@ function PathwayPreview() {
   ];
 
   return (
-    <div className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
-      <p className="text-base font-semibold text-[var(--primary-dark)]">
-        Guided assessment pathway
-      </p>
+    <div className="panel-card p-5">
+      <p className="eyebrow">Guided assessment pathway</p>
       <ol className="mt-4 grid gap-3 sm:grid-cols-2">
         {pathway.map((item, index) => (
           <li
-            className="flex items-start gap-3 rounded-md border border-[var(--line)] p-3"
+            className="quiet-card flex items-start gap-3 p-3"
             key={item}
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#e8f5f2] text-base font-bold text-[var(--primary-dark)]">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--primary-soft)] text-base font-bold text-[var(--primary-dark)]">
               {index + 1}
             </span>
             <span className="text-base font-semibold leading-snug">{item}</span>
@@ -843,11 +1099,94 @@ function DashboardSection({
   title: string;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--line)] bg-white p-5">
+    <div className="quiet-card p-5">
       <h3 className="mb-3 text-2xl font-semibold">{title}</h3>
       <div className="grid gap-3">{children}</div>
     </div>
   );
+}
+
+function MetricRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="quiet-card p-4">
+      <p className="text-base font-semibold text-[var(--muted)]">{label}</p>
+      <p className="mt-1 text-xl font-semibold capitalize leading-tight">
+        {value.replaceAll("_", " ")}
+      </p>
+    </div>
+  );
+}
+
+function ProfileMatrix({
+  activeProfile,
+}: {
+  activeProfile: AbilityConfidenceProfile;
+}) {
+  const cells: {
+    ability: string;
+    confidence: string;
+    profile: AbilityConfidenceProfile;
+  }[] = [
+    {
+      ability: "Good ability",
+      confidence: "Good confidence",
+      profile: "stable_profile",
+    },
+    {
+      ability: "Good ability",
+      confidence: "Low confidence",
+      profile: "under_confidence",
+    },
+    {
+      ability: "Reduced ability",
+      confidence: "Good confidence",
+      profile: "possible_risk_taking",
+    },
+    {
+      ability: "Reduced ability",
+      confidence: "Low confidence",
+      profile: "high_vulnerability",
+    },
+  ];
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {cells.map((cell) => {
+        const isActive = cell.profile === activeProfile;
+
+        return (
+          <div
+            className={`rounded-md border p-4 ${
+              isActive
+                ? "border-[var(--primary)] bg-[var(--primary-soft)]"
+                : "border-[var(--line)] bg-white"
+            }`}
+            key={cell.profile}
+          >
+            <p className="flex items-center gap-2 text-base font-semibold">
+              {isActive && <CheckCircle2 aria-hidden size={18} />}
+              {profileCopy[cell.profile].title}
+            </p>
+            <p className="mt-2 text-base text-[var(--muted)]">
+              {cell.ability}, {cell.confidence}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function getRiskSupportCopy(riskCategory: RiskCategory) {
+  if (riskCategory === "high") {
+    return "Pause higher-risk testing and consider supported review.";
+  }
+
+  if (riskCategory === "moderate") {
+    return "Community or supervised support may help preserve safe mobility.";
+  }
+
+  return "Maintain activity and monitor changes over time.";
 }
 
 function SummaryGrid({ items }: { items: [string, string][] }) {
@@ -855,7 +1194,7 @@ function SummaryGrid({ items }: { items: [string, string][] }) {
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {items.map(([label, value]) => (
         <div
-          className="rounded-lg border border-[var(--line)] bg-white p-4"
+          className="quiet-card p-4"
           key={label}
         >
           <p className="text-base font-semibold text-[var(--muted)]">{label}</p>
@@ -883,7 +1222,7 @@ function TextField({
     <label className="grid gap-2">
       <span className="font-semibold">{label}</span>
       <input
-        className="min-h-14 rounded-md border border-[var(--line)] bg-white px-4"
+        className="input-field"
         onChange={(event) => onChange(event.target.value)}
         type={type}
         value={value}
@@ -896,9 +1235,42 @@ function FormGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-4 md:grid-cols-2">{children}</div>;
 }
 
+function DistanceSelector({
+  onChange,
+  value,
+}: {
+  onChange: (value: number) => void;
+  value: number;
+}) {
+  const distances = [4, 5, 10];
+
+  return (
+    <div>
+      <p className="mb-3 font-semibold">Walking distance</p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {distances.map((distance) => (
+          <button
+            aria-pressed={value === distance}
+            className={`secondary-action ${
+              value === distance
+                ? "border-[var(--primary)] bg-[#e8f5f2] text-[var(--primary-dark)]"
+                : ""
+            }`}
+            key={distance}
+            onClick={() => onChange(distance)}
+            type="button"
+          >
+            {distance}m
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SafetyNotice({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-5 flex gap-3 rounded-md border border-[#f1d6a8] bg-[#fff8ea] p-4 text-[var(--warning)]">
+    <div className="mt-5 flex gap-3 rounded-md border border-[#f1d6a8] bg-[var(--warning-soft)] p-4 text-[var(--warning)]">
       <AlertTriangle aria-hidden className="mt-1 shrink-0" size={24} />
       <p>{children}</p>
     </div>

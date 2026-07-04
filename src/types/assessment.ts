@@ -76,7 +76,8 @@ export type FloorRisingMetrics = {
   completionStatus: "completed" | "stopped" | "skipped" | "demo";
   durationSeconds?: number;
   requiredAssistance: boolean;
-  source: "manual" | "demo";
+  movementQuality?: "steady" | "variable" | "unsafe" | "not_assessed";
+  source: "manual" | "demo" | "camera";
 };
 
 export type VisionMetrics = {
