@@ -1,14 +1,15 @@
 "use client";
 
 import { BookOpen, ClipboardCheck, Users } from "lucide-react";
-import { shellCopy } from "@/components/layout/copy";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import type { MessageKey } from "@/lib/i18n/messages";
 
 export type ShellTab = "assessment" | "community" | "resources";
 
-const tabs: { id: ShellTab; label: string; Icon: typeof ClipboardCheck }[] = [
-  { id: "assessment", label: shellCopy.tabs.assessment, Icon: ClipboardCheck },
-  { id: "community", label: shellCopy.tabs.community, Icon: Users },
-  { id: "resources", label: shellCopy.tabs.resources, Icon: BookOpen },
+const tabs: { id: ShellTab; labelKey: MessageKey; Icon: typeof ClipboardCheck }[] = [
+  { id: "assessment", labelKey: "shell.tabs.assessment", Icon: ClipboardCheck },
+  { id: "community", labelKey: "shell.tabs.community", Icon: Users },
+  { id: "resources", labelKey: "shell.tabs.resources", Icon: BookOpen },
 ];
 
 /** Fixed bottom tab bar — visible only on the three main signed-in tabs. */
@@ -19,9 +20,11 @@ export function TabBar({
   active: ShellTab;
   onSelect: (tab: ShellTab) => void;
 }) {
+  const { t } = useLanguage();
+
   return (
     <nav aria-label="Main" className="tab-bar">
-      {tabs.map(({ id, label, Icon }) => (
+      {tabs.map(({ id, labelKey, Icon }) => (
         <button
           aria-current={active === id ? "page" : undefined}
           className="tab-item"
@@ -32,7 +35,7 @@ export function TabBar({
           <span className="tab-item__icon">
             <Icon aria-hidden />
           </span>
-          <span>{label}</span>
+          <span>{t(labelKey)}</span>
         </button>
       ))}
     </nav>

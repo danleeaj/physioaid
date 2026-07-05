@@ -17,7 +17,6 @@ import { DraftTranslationNote } from "@/components/i18n/DraftTranslationNote";
 import { ListenButton } from "@/components/i18n/ListenButton";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { shellCopy } from "@/components/layout/copy";
 import { riskLabel } from "@/components/dashboard/demo-display-data";
 import { clinicalText } from "@/lib/i18n/clinical-drafts";
 import { profileCopy } from "@/content/clinical-copy";
@@ -26,8 +25,6 @@ import { saveSessionForReport } from "@/lib/report-session";
 import { saveAssessment } from "@/lib/assessment-history";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
 import type { AssessmentSession, RiskCategory } from "@/types/assessment";
-
-const copy = shellCopy.result;
 
 const STOPPED_NOTICE =
   "The assessment stopped before one or more higher-risk tests. This summary uses completed and demo-safe screening data only.";
@@ -270,23 +267,23 @@ export function AssessmentResultScreen({
           {saved ? (
             <>
               <Check aria-hidden size={22} />
-              {copy.savedOnDevice}
+              {t("shell.result.savedOnDevice")}
             </>
           ) : (
-            copy.saveToHistory
+            t("shell.result.saveToHistory")
           )}
         </button>
         {/* Clinician handoff — physio / OT / doctor opens the printable report */}
         <button className="secondary-action w-full" onClick={openReport} type="button">
           <FileText aria-hidden size={20} />
-          {copy.openReport}
+          {t("shell.result.openReport")}
         </button>
         <button className="secondary-action w-full" onClick={onViewResources} type="button">
-          {copy.viewResources}
+          {t("shell.result.viewResources")}
           <ArrowRight aria-hidden size={20} />
         </button>
         <button className="secondary-action w-full" onClick={onBackToAssessment} type="button">
-          {copy.backToAssessment}
+          {t("shell.result.backToAssessment")}
         </button>
       </section>
 

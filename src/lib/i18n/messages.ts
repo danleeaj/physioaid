@@ -137,6 +137,221 @@ const en = {
   "community.nearYou": "Near you",
   "community.demoNote":
     "Demonstration content — community posts and activities shown here are fictional.",
+
+  /* ------------------------------------------------------------------ */
+  /* App shell (Sign In, tabs, home, history, resources, profile, etc.)  */
+  /* English only for now — zh/ms/ta fall back automatically; drafts are */
+  /* a flagged follow-up for language review.                            */
+  /* ------------------------------------------------------------------ */
+  "shell.signIn.headline": "Move with more confidence.",
+  "shell.signIn.supporting":
+    "Simple mobility checks, progress history, and nearby support.",
+  "shell.signIn.continueGoogle": "Continue with Google",
+  "shell.signIn.signingIn": "Signing in…",
+  "shell.signIn.googleError":
+    "Google sign-in didn’t complete. You can try again or explore with the Mr Tan demo.",
+  "shell.signIn.continueMobile": "Continue with mobile number",
+  "shell.signIn.continueEmail": "Continue with email",
+  "shell.signIn.comingSoon": "Coming soon",
+  "shell.signIn.carePartner": "Care partner sign in",
+  "shell.signIn.demo": "Continue with Mr Tan demo",
+  "shell.signIn.privacy": "Your assessment records stay private and secure.",
+  "shell.signIn.stubNote":
+    "Mobile and email sign-in are coming soon. Use the Mr Tan demo to explore the app.",
+
+  "shell.tabs.assessment": "Assessment",
+  "shell.tabs.community": "Community",
+  "shell.tabs.resources": "Resources",
+
+  "shell.home.greetingMorning": "Good morning",
+  "shell.home.greetingAfternoon": "Good afternoon",
+  "shell.home.greetingEvening": "Good evening",
+  "shell.home.todayTitle": "Today’s mobility check",
+  "shell.home.todayDuration": "Takes about 4 minutes",
+  "shell.home.startAssessment": "Start assessment",
+  "shell.home.reassurance": "There are no wrong answers.",
+  "shell.home.lastResultTitle": "Last result",
+  "shell.home.nextStepTitle": "Recommended next step",
+  "shell.home.nextStepBody": "Try 8-minute balance practice",
+  "shell.home.openExercise": "Open exercise",
+  "shell.home.historyTitle": "Recent checks",
+  "shell.home.historyEmpty":
+    "No saved checks yet. Your first mobility check will appear here.",
+  "shell.home.viewAllHistory": "View all history",
+  "shell.home.confidenceLabel": "Confidence",
+  "shell.home.chairStandLabel": "Chair stand",
+  "shell.home.walkingLabel": "Walking",
+  "shell.home.notTested": "Not tested",
+  "shell.home.profileButton": "Open profile and settings",
+
+  "shell.sample.pill": "Sample",
+
+  "shell.flow.exit": "Exit",
+  "shell.flow.exitTitle": "Leave this check?",
+  "shell.flow.exitBody":
+    "Your answers so far will not be saved. You can start again any time.",
+  "shell.flow.exitConfirm": "Leave check",
+  "shell.flow.exitCancel": "Keep going",
+  "shell.flow.loadSample": "Load sample answers (Mr Tan)",
+  "shell.flow.sampleLoaded":
+    "Sample answers loaded — you can change any of them.",
+
+  "shell.result.title": "Assessment complete",
+  "shell.result.overallStatus": "Overall status",
+  "shell.result.whatWeFound": "What we found",
+  "shell.result.recommendedAction": "Recommended next action",
+  "shell.result.skipNote":
+    "Skipping a movement that does not feel safe today is a sensible choice, not a failure.",
+  "shell.result.demoNote":
+    "This is today’s new check. It may differ from the sample history shown in the demo.",
+  "shell.result.saveToHistory": "Save to history",
+  "shell.result.savedOnDevice": "Saved on this device",
+  "shell.result.openReport": "Open clinician report (print / PDF)",
+  "shell.result.viewResources": "View resources",
+  "shell.result.backToAssessment": "Back to Assessment",
+
+  "shell.history.title": "Assessment History",
+  "shell.history.checksRecorded": "{count} checks recorded",
+  "shell.history.trendNote": "Confidence and support levels over time",
+  "shell.history.sampleTrend": "Sample history — Mr Tan demo",
+  "shell.history.empty":
+    "No saved checks yet. Complete today’s mobility check to start your journal.",
+  "shell.history.viewDetails": "View details",
+  "shell.history.detailTitle": "Assessment detail",
+  "shell.history.filterAll": "All",
+  "shell.history.filterConfidence": "Confidence",
+  "shell.history.filterChairStand": "Chair stand",
+  "shell.history.filterGait": "Gait",
+  "shell.history.filterFloorRise": "Floor rise",
+
+  "shell.communityTab.title": "Community",
+  "shell.communityTab.goalTitle": "{days}-day movement goal",
+  "shell.communityTab.goalReached": "Goal reached",
+  "shell.communityTab.daysLeft": "{count} days left",
+  "shell.communityTab.goalProgress":
+    "{done} of {total} days this week — every gentle movement counts.",
+  "shell.communityTab.segNearby": "Nearby",
+  "shell.communityTab.segFriends": "Friends",
+  "shell.communityTab.segGroups": "Groups",
+  "shell.communityTab.comment": "Comment",
+
+  "shell.resources.title": "Resources",
+  "shell.resources.searchPlaceholder": "Search nearby support",
+  "shell.resources.segNearby": "Nearby",
+  "shell.resources.segVideos": "Videos",
+  "shell.resources.segClinics": "Clinics",
+  "shell.resources.suggestedTitle": "Suggested for you",
+  "shell.resources.suggestedAI": "AI-suggested",
+  "shell.resources.suggestedCurated": "Curated",
+  "shell.resources.suggestedNote":
+    "Suggestions are decision support only, not medical advice.",
+  "shell.resources.empty": "No matches here yet. Try a different word or segment.",
+  "shell.resources.plannerTitle": "Population insights (demo)",
+  "shell.resources.plannerBody": "For planners: neighbourhood screening trends.",
+  "shell.resources.plannerOpen": "Open",
+
+  "shell.profile.title": "Profile",
+  "shell.profile.ageGroupLabel": "Age group",
+  "shell.profile.languageLabel": "Preferred language",
+  "shell.profile.textSizeLabel": "Text size",
+  "shell.profile.textStandard": "Standard",
+  "shell.profile.textLarge": "Large",
+  "shell.profile.textXL": "Extra large",
+  "shell.profile.carePartner": "Care partner",
+  "shell.profile.carePartnerNone": "Not connected",
+  "shell.profile.reminders": "Assessment reminders",
+  "shell.profile.remindersOn": "Weekly reminder on",
+  "shell.profile.remindersOff": "Reminders off",
+  "shell.profile.on": "On",
+  "shell.profile.off": "Off",
+  "shell.profile.privacy": "Privacy and consent",
+  "shell.profile.neighbourhood": "Neighbourhood",
+  "shell.profile.supportContact": "Support contact",
+  "shell.profile.editProfile": "Edit profile",
+  "shell.profile.signOut": "Sign out",
+
+  "shell.carePartner.title": "Care partner access",
+  "shell.carePartner.body":
+    "Help a family member review assessment summaries and nearby support.",
+  "shell.carePartner.inputLabel": "Mobile number or invite code",
+  "shell.carePartner.continue": "Continue",
+  "shell.carePartner.backToSignIn": "Back to sign in",
+  "shell.carePartner.stubNote": "Care partner access is coming soon.",
+
+  "shell.privacy.title": "Privacy & consent",
+
+  /* Onboarding — identifies the user before any assessment */
+  "onboarding.progress": "Step {current} of {total}",
+  "onboarding.continue": "Continue",
+  "onboarding.back": "Back",
+  "onboarding.skip": "Add later",
+  "onboarding.finish": "Finish setup",
+  "onboarding.welcome.title": "Welcome to Physio-Aid",
+  "onboarding.welcome.body":
+    "A few quick questions so the app fits you. This takes about two minutes, and you can change anything later in your profile.",
+  "onboarding.welcome.start": "Let’s begin",
+  "onboarding.name.title": "What should we call you?",
+  "onboarding.name.support": "Your preferred name is used across the app.",
+  "onboarding.age.title": "Which age group are you in?",
+  "onboarding.age.support": "This helps the team read your results in context.",
+  "onboarding.age.under60": "Under 60",
+  "onboarding.age.60s": "60s",
+  "onboarding.age.70s": "70s",
+  "onboarding.age.80plus": "80 and above",
+  "onboarding.living.title": "Who do you live with?",
+  "onboarding.living.alone": "I live alone",
+  "onboarding.living.spouse": "With my spouse",
+  "onboarding.living.family": "With family",
+  "onboarding.living.support": "With a helper or support",
+  "onboarding.language.title": "Which language do you prefer?",
+  "onboarding.language.support": "The whole app will use this language.",
+  "onboarding.textSize.title": "Choose a comfortable text size",
+  "onboarding.textSize.support": "You can change this any time in your profile.",
+  "onboarding.contact.title": "Who should we contact if you need support?",
+  "onboarding.contact.support":
+    "Someone we can reach if you feel unsafe during a movement test. You can add this later.",
+  "onboarding.consentPrivacy.title": "Privacy and consent",
+  "onboarding.consentPrivacy.body":
+    "Your assessment records stay private. We collect only what is needed for your mobility checks, and you can ask for your records to be deleted or exported at any time.",
+  "onboarding.consentPrivacy.agree":
+    "I understand and agree to use Physio-Aid as decision support — not a diagnosis.",
+  "onboarding.consentAI.title": "AI-powered suggestions",
+  "onboarding.consentAI.body":
+    "Allow Physio-Aid to use your neighbourhood and overall support level — never your name or contact details — to suggest nearby activities.",
+  "onboarding.consentAI.yes": "Yes, suggest activities for me",
+  "onboarding.consentAI.no": "No, show standard suggestions only",
+  "onboarding.consentCommunity.title": "Community visibility",
+  "onboarding.consentCommunity.body":
+    "Share your activity updates (like completed checks) with your neighbourhood community feed?",
+  "onboarding.consentCommunity.yes": "Yes, share my activity",
+  "onboarding.consentCommunity.no": "No, keep my activity private",
+
+  /* Assessment Hub — checklist of measures */
+  "hub.title": "Assessment",
+  "hub.support": "Complete the checks that feel right today.",
+  "hub.item.confidence": "Self Confidence Assessment",
+  "hub.item.walk": "Walk Test",
+  "hub.item.sitToStand": "Sit to Stand",
+  "hub.item.tug": "Timed Up and Go",
+  "hub.item.exercise": "Exercise",
+  "hub.item.functionalReach": "Functional Reach",
+  "hub.status.notStarted": "Not started",
+  "hub.status.inProgress": "In progress",
+  "hub.status.completed": "Completed",
+  "hub.status.skipped": "Skipped",
+  "hub.status.locked": "Locked",
+  "hub.status.comingSoon": "Coming soon",
+  "hub.start": "Start",
+  "hub.resume": "Resume",
+  "hub.redo": "Redo",
+  "hub.lockedAfterSitToStand": "Unlocks after Sit to Stand",
+  "hub.safetyPause":
+    "Movement tests are paused for today — that’s the safe choice. You can still review your summary.",
+  "hub.exercise.body": "8-minute balance practice",
+  "hub.exercise.open": "Open video",
+  "hub.exercise.markDone": "I’ve done this",
+  "hub.finish": "Finish & view result",
+  "hub.finishHint": "Finish Self Confidence, Sit to Stand and Walk Test first.",
 } as const;
 
 export type MessageKey = keyof typeof en;

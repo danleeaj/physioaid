@@ -371,7 +371,8 @@ textarea:focus-visible {
   font-size: var(--text-label);
   font-weight: 700;
   min-height: 2.75rem;
-  padding: 0.5rem 0.75rem;
+  min-width: 0;              /* let labels wrap at 320px / large text sizes */
+  padding: 0.5rem 0.5rem;
 }
 
 .segmented button[aria-pressed="true"] {
@@ -423,6 +424,88 @@ textarea:focus-visible {
   .flow-question {
     font-size: 1.75rem;      /* 28px on larger phones */
   }
+}
+
+/* ---------------------------- ASSESSMENT HUB ------------------------------ */
+/* Owner-supplied compact checklist spec — scoped to the hub screen only.
+   #f7f7f7 page, #e7e7e7 cards, 78px height, 4px radius, 8px gaps, 14px
+   titles, navy Start button, right-bottom thumbnail. Completion is always
+   icon + text, never colour alone. */
+
+.hub-screen {
+  background: #f7f7f7;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+}
+
+.hub-card {
+  align-items: center;
+  background: #e7e7e7;
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  gap: 12px;
+  min-height: 78px;
+  overflow: hidden;
+  padding: 12px 0 12px 16px;
+  position: relative;
+  text-align: left;
+  width: 100%;
+}
+
+.hub-card[data-locked="true"] {
+  opacity: 0.62;
+}
+
+.hub-card__title {
+  font-size: 0.875rem;   /* 14px per spec */
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.hub-card__status {
+  align-items: center;
+  color: #4b5563;
+  display: inline-flex;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  gap: 0.3rem;
+}
+
+.hub-card__start {
+  background: #1e3a5f;   /* navy */
+  border: none;
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 700;
+  min-height: 44px;
+  padding: 0 18px;
+}
+
+.hub-card__start:disabled {
+  background: #9aa7b4;
+  cursor: default;
+}
+
+/* Right-bottom thumbnail block */
+.hub-card__thumb {
+  align-items: flex-end;
+  align-self: flex-end;
+  background: #d8d8d8;
+  border-top-left-radius: 4px;
+  color: #6b7280;
+  display: flex;
+  flex: none;
+  height: 44px;
+  justify-content: center;
+  margin-left: auto;
+  padding: 8px;
+  width: 56px;
 }
 
 /* Avatar placeholder for feed cards */

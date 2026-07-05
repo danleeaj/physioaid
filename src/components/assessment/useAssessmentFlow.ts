@@ -49,7 +49,12 @@ export type PhysicalTestPhase = "demo" | "start" | "manual";
 
 const lastQuestionIndex = fallsEfficacyQuestions.length - 1;
 
-export function useAssessmentFlow(options?: { initialStep?: AssessmentStep }) {
+export function useAssessmentFlow(options?: {
+  initialStep?: AssessmentStep;
+  /** Seed from the user profile so results/reports carry the real identity. */
+  initialDemographics?: Demographics;
+  initialContact?: EmergencyContact;
+}) {
   const [stepIndex, setStepIndex] = useState(() => {
     const initialIndex = options?.initialStep
       ? steps.indexOf(options.initialStep)
@@ -76,17 +81,21 @@ export function useAssessmentFlow(options?: { initialStep?: AssessmentStep }) {
     needsSupervision: false,
     canProceed: true,
   });
-  const [contact, setContact] = useState<EmergencyContact>({
-    name: "",
-    phone: "",
-    relationship: "",
-  });
-  const [demographics, setDemographics] = useState<Demographics>({
-    displayName: "Mr Tan",
-    age: 78,
-    livingSituation: "Lives with spouse",
-    fallHistory: "near_fall",
-  });
+  const [contact, setContact] = useState<EmergencyContact>(
+    options?.initialContact ?? {
+      name: "",
+      phone: "",
+      relationship: "",
+    },
+  );
+  const [demographics, setDemographics] = useState<Demographics>(
+    options?.initialDemographics ?? {
+      displayName: "Mr Tan",
+      age: 78,
+      livingSituation: "Lives with spouse",
+      fallHistory: "near_fall",
+    },
+  );
   const [questionnaire, setQuestionnaire] = useState<QuestionnaireDraft>({
     balanceConfidence: 5,
     balanceRecoveryConfidence: 4,
@@ -210,6 +219,17 @@ export function useAssessmentFlow(options?: { initialStep?: AssessmentStep }) {
     setQuestionIndex(0);
   }
 
+  /** Jump directly to a step (hub segments) — mirrors next()'s phase resets. */
+  function goToStep(step: AssessmentStep) {
+    const index = steps.indexOf(step);
+    if (index < 0) return;
+    if (step === "questionnaire") setQuestionIndex(0);
+    if (step === "chair_stand") setChairStandPhase("demo");
+    if (step === "motion_gait") setGaitPhase("demo");
+    if (step === "floor_rising") setFloorRisingPhase("demo");
+    setStepIndex(index);
+  }
+
   function skipToDashboardWithFloorSkipped() {
     setFloorRising(getSkippedFloorRisingMetrics());
     setStepIndex(steps.indexOf("dashboard"));
@@ -286,6 +306,7 @@ export function useAssessmentFlow(options?: { initialStep?: AssessmentStep }) {
     isPhysicalDemoScreen,
     next,
     back,
+    goToStep,
     loadDemo,
     skipToDashboardWithFloorSkipped,
     markChairStoppedOrUnsafe,

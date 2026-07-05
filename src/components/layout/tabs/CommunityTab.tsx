@@ -2,7 +2,8 @@
 
 import { Heart, MapPin, MessageCircle } from "lucide-react";
 import { useState } from "react";
-import { shellCopy } from "@/components/layout/copy";
+import { FlaskConical } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { activeDaysThisWeek, loadPracticeLog } from "@/lib/streak";
 
 type FeedSegment = "nearby" | "friends" | "groups";
@@ -66,10 +67,10 @@ const feedItems: FeedItem[] = [
   },
 ];
 
-const segments: { id: FeedSegment; label: string }[] = [
-  { id: "nearby", label: "Nearby" },
-  { id: "friends", label: "Friends" },
-  { id: "groups", label: "Groups" },
+const segments: { id: FeedSegment; labelKey: "shell.communityTab.segNearby" | "shell.communityTab.segFriends" | "shell.communityTab.segGroups" }[] = [
+  { id: "nearby", labelKey: "shell.communityTab.segNearby" },
+  { id: "friends", labelKey: "shell.communityTab.segFriends" },
+  { id: "groups", labelKey: "shell.communityTab.segGroups" },
 ];
 
 const WEEKLY_GOAL_DAYS = 3;
@@ -81,6 +82,7 @@ function daysLeftThisWeek(): number {
 
 /** Gentle neighbourhood community feed for older adults — encouragement, not competition. */
 export function CommunityTab() {
+  const { t } = useLanguage();
   const [kudos, setKudos] = useState<Record<string, boolean>>({});
   const [segment, setSegment] = useState<FeedSegment>("nearby");
   // Real device-local movement log (lazy init; [] on the server render).
@@ -99,24 +101,26 @@ export function CommunityTab() {
   return (
     <>
       <header className="top-bar">
-        <h1 className="top-bar__title">{shellCopy.community.title}</h1>
+        <h1 className="top-bar__title">{t("shell.communityTab.title")}</h1>
       </header>
       <div className="app-content app-content--tabs">
         {/* Weekly movement goal — real device-local practice log */}
         <section className="app-card app-card--hero grid gap-2">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-[length:var(--text-body)] font-bold">
-              {WEEKLY_GOAL_DAYS}-day movement goal
+              {t("shell.communityTab.goalTitle", { days: WEEKLY_GOAL_DAYS })}
             </h2>
             <p className="text-[length:var(--text-label)] font-bold text-[var(--muted)]">
               {goalDays >= WEEKLY_GOAL_DAYS
-                ? "Goal reached"
-                : `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`}
+                ? t("shell.communityTab.goalReached")
+                : t("shell.communityTab.daysLeft", { count: daysLeft })}
             </p>
           </div>
           <p className="text-[length:var(--text-label)] text-[var(--muted)]">
-            {goalDays} of {WEEKLY_GOAL_DAYS} days this week — every gentle
-            movement counts.
+            {t("shell.communityTab.goalProgress", {
+              done: goalDays,
+              total: WEEKLY_GOAL_DAYS,
+            })}
           </p>
           <div aria-hidden className="progress-track">
             <div
@@ -135,10 +139,16 @@ export function CommunityTab() {
               onClick={() => setSegment(item.id)}
               type="button"
             >
-              {item.label}
+              {t(item.labelKey)}
             </button>
           ))}
         </div>
+
+        {/* Fictional sample feed until a real community backend exists */}
+        <p className="flex items-center gap-2 px-1 text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
+          <FlaskConical aria-hidden size={12} />
+          {t("shell.sample.pill")} · {t("community.demoNote")}
+        </p>
 
         {/* Neighbourhood feed */}
         {visible.map((item) => (
@@ -169,11 +179,11 @@ export function CommunityTab() {
                 type="button"
               >
                 <Heart aria-hidden size={16} />
-                {kudos[item.id] ? "Cheered" : "Cheer"}
+                {kudos[item.id] ? t("community.cheered") : t("community.cheer")}
               </button>
               <button className="link-action" type="button">
                 <MessageCircle aria-hidden size={16} />
-                Comment
+                {t("shell.communityTab.comment")}
               </button>
             </div>
           </article>

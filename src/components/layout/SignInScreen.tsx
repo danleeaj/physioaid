@@ -3,19 +3,17 @@
 import { HeartHandshake, LogIn, Mail, Smartphone, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { shellCopy } from "@/components/layout/copy";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { PRODUCT_NAME } from "@/config/clinical-config";
-
-const copy = shellCopy.signIn;
 
 // Build-time inlined: true when Firebase env config is present. When it is
 // missing, Google sign-in cannot work, so it joins the coming-soon group.
 const firebaseConfigured = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
 
-function ComingSoonPill() {
+function ComingSoonPill({ label }: { label: string }) {
   return (
     <span className="ml-auto shrink-0 rounded-full bg-[var(--surface-muted)] px-2.5 py-1 text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
-      {copy.comingSoon}
+      {label}
     </span>
   );
 }
@@ -33,6 +31,7 @@ export function SignInScreen({
   onCarePartner: () => void;
 }) {
   const { signInWithGoogle } = useAuth();
+  const { t } = useLanguage();
   const [stubNote, setStubNote] = useState(false);
   const [googlePending, setGooglePending] = useState(false);
   const [googleError, setGoogleError] = useState(false);
@@ -59,9 +58,9 @@ export function SignInScreen({
     <div className="app-content min-h-dvh justify-center pb-[calc(20px+env(safe-area-inset-bottom))] pt-10">
       <p className="eyebrow text-center">{PRODUCT_NAME}</p>
       <h1 className="text-center text-[length:var(--text-display)] font-bold">
-        {copy.headline}
+        {t("shell.signIn.headline")}
       </h1>
-      <p className="text-center text-[var(--muted)]">{copy.supporting}</p>
+      <p className="text-center text-[var(--muted)]">{t("shell.signIn.supporting")}</p>
 
       {/* Warm hero placeholder — a safe mobility/care scene */}
       <div
@@ -80,8 +79,8 @@ export function SignInScreen({
         type="button"
       >
         <LogIn aria-hidden size={22} />
-        {googlePending ? copy.signingIn : copy.continueGoogle}
-        {!firebaseConfigured && <ComingSoonPill />}
+        {googlePending ? t("shell.signIn.signingIn") : t("shell.signIn.continueGoogle")}
+        {!firebaseConfigured && <ComingSoonPill label={t("shell.signIn.comingSoon")} />}
       </button>
 
       {googleError && (
@@ -90,7 +89,7 @@ export function SignInScreen({
           className="text-center text-[length:var(--text-label)] text-[var(--danger)]"
           role="alert"
         >
-          {copy.googleError}
+          {t("shell.signIn.googleError")}
         </p>
       )}
 
@@ -100,8 +99,8 @@ export function SignInScreen({
         type="button"
       >
         <Smartphone aria-hidden size={22} />
-        {copy.continueMobile}
-        <ComingSoonPill />
+        {t("shell.signIn.continueMobile")}
+        <ComingSoonPill label={t("shell.signIn.comingSoon")} />
       </button>
       <button
         className="secondary-action w-full"
@@ -109,26 +108,26 @@ export function SignInScreen({
         type="button"
       >
         <Mail aria-hidden size={22} />
-        {copy.continueEmail}
-        <ComingSoonPill />
+        {t("shell.signIn.continueEmail")}
+        <ComingSoonPill label={t("shell.signIn.comingSoon")} />
       </button>
       <button className="secondary-action w-full" onClick={onCarePartner} type="button">
         <HeartHandshake aria-hidden size={22} />
-        {copy.carePartner}
+        {t("shell.signIn.carePartner")}
       </button>
       <button className="secondary-action w-full" onClick={onDemo} type="button">
         <UserRound aria-hidden size={22} />
-        {copy.demo}
+        {t("shell.signIn.demo")}
       </button>
 
       {stubNote && (
         <p aria-live="polite" className="text-center text-[length:var(--text-label)] text-[var(--muted-strong)]">
-          {copy.stubNote}
+          {t("shell.signIn.stubNote")}
         </p>
       )}
 
       <p className="text-center text-[length:var(--text-label)] text-[var(--muted)]">
-        {copy.privacy}
+        {t("shell.signIn.privacy")}
       </p>
     </div>
   );

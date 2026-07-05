@@ -1,8 +1,8 @@
 "use client";
 
 import { ShieldCheck } from "lucide-react";
-import { shellCopy } from "@/components/layout/copy";
 import { TopBar } from "@/components/layout/TopBar";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { DECISION_SUPPORT_DISCLAIMER } from "@/config/clinical-config";
 
 const points = [
@@ -15,9 +15,10 @@ const points = [
 
 /** Privacy & consent — participant-facing summary, secondary screen. */
 export function PrivacyConsentScreen({ onBack }: { onBack: () => void }) {
+  const { t } = useLanguage();
   return (
     <>
-      <TopBar onBack={onBack} title={shellCopy.privacy.title} />
+      <TopBar onBack={onBack} title={t("shell.privacy.title")} />
       <div className="app-content pb-[calc(20px+env(safe-area-inset-bottom))]">
         <section className="app-card app-card--hero flex items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--success-soft)] text-[var(--primary-dark)]">

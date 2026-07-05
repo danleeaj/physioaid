@@ -12,8 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { demoPerson } from "@/components/dashboard/demo-display-data";
-import { shellCopy } from "@/components/layout/copy";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import type { RiskCategory } from "@/types/assessment";
 
 export type ResourceSegment = "nearby" | "videos" | "clinics";
@@ -70,10 +69,10 @@ const cards: ResourceCard[] = [
   },
 ];
 
-const segments: { id: ResourceSegment; label: string }[] = [
-  { id: "nearby", label: "Nearby" },
-  { id: "videos", label: "Videos" },
-  { id: "clinics", label: "Clinics" },
+const segments: { id: ResourceSegment; labelKey: "shell.resources.segNearby" | "shell.resources.segVideos" | "shell.resources.segClinics" }[] = [
+  { id: "nearby", labelKey: "shell.resources.segNearby" },
+  { id: "videos", labelKey: "shell.resources.segVideos" },
+  { id: "clinics", labelKey: "shell.resources.segClinics" },
 ];
 
 const actionIcons = {
@@ -103,12 +102,16 @@ export function ResourcesTab({
   segment,
   onSegmentChange,
   latestRisk,
+  area,
 }: {
   segment: ResourceSegment;
   onSegmentChange: (segment: ResourceSegment) => void;
   /** Coarse risk band from the latest history entry — the only profile hint sent to the API. */
   latestRisk?: RiskCategory | null;
+  /** The user's neighbourhood (profile) — anchors nearby suggestions. */
+  area?: string | null;
 }) {
+  const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
   const [suggestionsFailed, setSuggestionsFailed] = useState(false);
@@ -117,7 +120,7 @@ export function ResourcesTab({
   useEffect(() => {
     if (segment !== "nearby" || suggestions || suggestionsFailed) return;
     let cancelled = false;
-    const params = new URLSearchParams({ area: demoPerson.location });
+    const params = new URLSearchParams({ area: area ?? "Toa Payoh" });
     if (latestRisk) params.set("risk", latestRisk);
     fetch(`/api/recommend-activities?${params.toString()}`)
       .then((response) => (response.ok ? response.json() : null))
@@ -138,7 +141,7 @@ export function ResourcesTab({
     return () => {
       cancelled = true;
     };
-  }, [segment, suggestions, suggestionsFailed, latestRisk]);
+  }, [segment, suggestions, suggestionsFailed, latestRisk, area]);
 
   const visible = cards.filter(
     (card) =>
@@ -150,11 +153,11 @@ export function ResourcesTab({
   return (
     <>
       <header className="top-bar">
-        <h1 className="top-bar__title">{shellCopy.resources.title}</h1>
+        <h1 className="top-bar__title">{t("shell.resources.title")}</h1>
       </header>
       <div className="app-content app-content--tabs">
         <label className="relative block">
-          <span className="sr-only">{shellCopy.resources.searchPlaceholder}</span>
+          <span className="sr-only">{t("shell.resources.searchPlaceholder")}</span>
           <Search
             aria-hidden
             className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]"
@@ -163,7 +166,7 @@ export function ResourcesTab({
           <input
             className="input-field pl-12"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={shellCopy.resources.searchPlaceholder}
+            placeholder={t("shell.resources.searchPlaceholder")}
             type="search"
             value={query}
           />
@@ -177,7 +180,7 @@ export function ResourcesTab({
               onClick={() => onSegmentChange(item.id)}
               type="button"
             >
-              {item.label}
+              {t(item.labelKey)}
             </button>
           ))}
         </div>
@@ -187,9 +190,9 @@ export function ResourcesTab({
           <section className="grid grid-cols-1 gap-2">
             <h2 className="flex items-center gap-2 px-1 text-[length:var(--text-body)] font-bold">
               <Sparkles aria-hidden className="text-[var(--accent-warm)]" size={18} />
-              Suggested for you
+              {t("shell.resources.suggestedTitle")}
               <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-2.5 py-1 text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
-                {suggestions.source === "ai" ? "AI-suggested" : "Curated"}
+                {suggestions.source === "ai" ? t("shell.resources.suggestedAI") : t("shell.resources.suggestedCurated")}
               </span>
             </h2>
             {suggestions.activities.map((activity) => (
@@ -215,7 +218,7 @@ export function ResourcesTab({
               </article>
             ))}
             <p className="px-1 text-[length:var(--text-caption)] text-[var(--muted)]">
-              Suggestions are decision support only, not medical advice.
+              {t("shell.resources.suggestedNote")}
             </p>
           </section>
         )}
@@ -261,7 +264,7 @@ export function ResourcesTab({
 
         {visible.length === 0 && (
           <p className="px-1 text-[var(--muted)]">
-            No matches here yet. Try a different word or segment.
+            {t("shell.resources.empty")}
           </p>
         )}
 
@@ -272,14 +275,14 @@ export function ResourcesTab({
           </span>
           <div className="min-w-0 flex-1">
             <h2 className="text-[length:var(--text-body)] font-bold">
-              Population insights (demo)
+              {t("shell.resources.plannerTitle")}
             </h2>
             <p className="text-[length:var(--text-label)] text-[var(--muted)]">
-              For planners: neighbourhood screening trends.
+              {t("shell.resources.plannerBody")}
             </p>
           </div>
           <Link className="link-action shrink-0" href="/insights">
-            Open
+            {t("shell.resources.plannerOpen")}
           </Link>
         </section>
       </div>

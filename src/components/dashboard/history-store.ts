@@ -9,7 +9,7 @@ import {
 import { getAssessmentHistory } from "@/lib/assessment-history";
 import type { AssessmentSession } from "@/types/assessment";
 
-const STORAGE_KEY = "physioaid.history";
+const LEGACY_STORAGE_KEY = "physioaid.history";
 
 export type HistorySession =
   | { kind: "demo" }
@@ -20,11 +20,17 @@ type SavedRecord = {
   session?: AssessmentSession;
 };
 
-function loadStoredRecords(): SavedRecord[] {
-  if (typeof window === "undefined") return [];
+/** Device-local saves are scoped per identity so demo-device history can
+ * never leak into a real account (and vice versa). */
+function storageKey(session: HistorySession): string {
+  return session.kind === "demo"
+    ? "physioaid.history.demo"
+    : `physioaid.history.${session.uid}`;
+}
+
+function parseRecords(raw: string | null): SavedRecord[] {
+  if (!raw) return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     // Earlier builds stored bare HistoryEntry objects — migrate on read.
@@ -40,9 +46,25 @@ function loadStoredRecords(): SavedRecord[] {
   }
 }
 
-function persistRecords(records: SavedRecord[]) {
+function loadStoredRecords(session: HistorySession | null): SavedRecord[] {
+  if (typeof window === "undefined" || !session) return [];
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    // One-time migration: the un-scoped legacy key predates real accounts,
+    // so its contents belong to the demo bucket.
+    const legacy = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacy != null) {
+      window.localStorage.setItem("physioaid.history.demo", legacy);
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
+    return parseRecords(window.localStorage.getItem(storageKey(session)));
+  } catch {
+    return [];
+  }
+}
+
+function persistRecords(session: HistorySession, records: SavedRecord[]) {
+  try {
+    window.localStorage.setItem(storageKey(session), JSON.stringify(records));
   } catch {
     // Storage may be unavailable (private mode) — history stays in memory.
   }
@@ -58,9 +80,15 @@ function persistRecords(records: SavedRecord[]) {
  * report stays reachable from history.
  */
 export function useHistoryStore(session: HistorySession | null) {
-  const [savedRecords, setSavedRecords] = useState<SavedRecord[]>(
-    loadStoredRecords,
-  );
+  const key = session ? storageKey(session) : null;
+  // Local saves are keyed by identity too — switching between demo and a real
+  // account swaps buckets instead of resetting state in an effect.
+  const [saved, setSaved] = useState<{
+    key: string | null;
+    records: SavedRecord[];
+  }>(() => ({ key, records: loadStoredRecords(session) }));
+  const savedRecords =
+    saved.key === key ? saved.records : loadStoredRecords(session);
   // Keyed by uid so a sign-out/sign-in never shows another account's cache —
   // no reset-in-effect needed, stale data is simply ignored below.
   const [remote, setRemote] = useState<{
@@ -94,17 +122,22 @@ export function useHistoryStore(session: HistorySession | null) {
 
   const remoteRecords = remote && remote.uid === uid ? remote.records : [];
 
-  const addSession = useCallback((newSession: AssessmentSession) => {
-    const record: SavedRecord = {
-      entry: sessionToHistoryEntry(newSession),
-      session: newSession,
-    };
-    setSavedRecords((current) => {
-      const next = [record, ...current.filter((r) => r.entry.id !== record.entry.id)];
-      persistRecords(next);
-      return next;
-    });
-  }, []);
+  const addSession = useCallback(
+    (newSession: AssessmentSession) => {
+      if (!session) return;
+      const record: SavedRecord = {
+        entry: sessionToHistoryEntry(newSession),
+        session: newSession,
+      };
+      const base = loadStoredRecords(session);
+      const next = [record, ...base.filter((r) => r.entry.id !== record.entry.id)];
+      persistRecords(session, next);
+      setSaved({ key: storageKey(session), records: next });
+    },
+    // session object identity changes per render; key by its stable parts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [session?.kind, session?.kind === "firebase" ? session.uid : null],
+  );
 
   // Local saves first (freshest), then remote not already present locally,
   // then — demo mode only — the static sample journal.

@@ -15,6 +15,14 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid;
     }
 
+    // User-owned profile (users/{uid}/profile/main) — written by onboarding.
+    match /users/{uid}/profile/{docId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.userId == request.auth.uid;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

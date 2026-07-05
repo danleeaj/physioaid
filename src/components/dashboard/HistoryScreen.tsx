@@ -3,8 +3,8 @@
 import { ChevronRight, FlaskConical, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import type { HistoryEntry } from "@/components/dashboard/demo-display-data";
-import { shellCopy } from "@/components/layout/copy";
 import { TopBar } from "@/components/layout/TopBar";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 const filters = [
   { id: "all", label: "All" },
@@ -35,11 +35,12 @@ export function HistoryScreen({
   onBack: () => void;
   onViewDetail: (entryId: string) => void;
 }) {
+  const { t } = useLanguage();
   const [filter, setFilter] = useState<FilterId>("all");
 
   return (
     <>
-      <TopBar onBack={onBack} title={shellCopy.history.title} />
+      <TopBar onBack={onBack} title={t("shell.history.title")} />
       <div className="app-content pb-[calc(20px+env(safe-area-inset-bottom))]">
         {/* Trend summary */}
         <section className="app-card app-card--hero flex items-start gap-3">
@@ -52,7 +53,7 @@ export function HistoryScreen({
             </p>
             <p className="text-[length:var(--text-label)] text-[var(--muted)]">
               {entries.some((entry) => entry.sample)
-                ? shellCopy.history.sampleTrend
+                ? t("shell.history.sampleTrend")
                 : "Confidence and support levels over time"}
             </p>
           </div>
@@ -77,7 +78,7 @@ export function HistoryScreen({
 
         {/* Timeline */}
         {entries.length === 0 && (
-          <p className="app-card text-[var(--muted)]">{shellCopy.history.empty}</p>
+          <p className="app-card text-[var(--muted)]">{t("shell.history.empty")}</p>
         )}
         {entries.map((entry) => (
           <article className="app-card grid gap-3" key={entry.id}>
@@ -86,7 +87,7 @@ export function HistoryScreen({
               {entry.sample && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-2 py-0.5">
                   <FlaskConical aria-hidden size={12} />
-                  {shellCopy.history.samplePill}
+                  {t("shell.sample.pill")}
                 </span>
               )}
             </p>
@@ -117,7 +118,7 @@ export function HistoryScreen({
               onClick={() => onViewDetail(entry.id)}
               type="button"
             >
-              {shellCopy.history.viewDetails}
+              {t("shell.history.viewDetails")}
               <ChevronRight aria-hidden size={16} />
             </button>
           </article>
