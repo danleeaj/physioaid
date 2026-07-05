@@ -1,5 +1,23 @@
 import type { Metadata, Viewport } from "next";
+import { Noto_Sans_SC, Noto_Sans_Tamil } from "next/font/google";
+import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 import "./globals.css";
+
+const notoSansSC = Noto_Sans_SC({
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+  variable: "--font-noto-sc",
+});
+
+const notoSansTamil = Noto_Sans_Tamil({
+  weight: ["400", "700"],
+  subsets: ["tamil"],
+  display: "swap",
+  preload: false,
+  variable: "--font-noto-tamil",
+});
 
 export const metadata: Metadata = {
   applicationName: "Physio-Aid",
@@ -28,7 +46,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#0f766e",
+  themeColor: "#12564e",
 };
 
 export default function RootLayout({
@@ -37,8 +55,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html
+      className={`h-full antialiased ${notoSansSC.variable} ${notoSansTamil.variable}`}
+      lang="en"
+      suppressHydrationWarning
+    >
+      <body className="min-h-full flex flex-col">
+        <LanguageProvider>{children}</LanguageProvider>
+      </body>
     </html>
   );
 }
