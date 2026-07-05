@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { CameraSetup } from "@/components/assessment/CameraSetup";
 import { FloorRisingDemo } from "@/components/assessment/demos/FloorRisingDemo";
 import { TestStartPanel } from "@/components/assessment/TestStartPanel";
 import { FormGrid, TextField } from "@/components/assessment/ui/Fields";
+import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
 import {
@@ -11,6 +13,7 @@ import {
 } from "@/lib/functional-tests/floor-rising";
 import { getCameraFloorRisingPlaceholder } from "@/lib/vision/floor-rising";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
+import type { CameraSupportStatus } from "@/lib/vision/camera";
 
 export function FloorRisingScreen({ flow }: { flow: AssessmentFlow }) {
   const {
@@ -21,6 +24,7 @@ export function FloorRisingScreen({ flow }: { flow: AssessmentFlow }) {
     motionGate,
     skipToDashboardWithFloorSkipped,
   } = flow;
+  const [cameraStatus, setCameraStatus] = useState<CameraSupportStatus>();
 
   if (floorRisingPhase === "demo") {
     return (
@@ -70,7 +74,10 @@ export function FloorRisingScreen({ flow }: { flow: AssessmentFlow }) {
         ].map(([label, value]) => ({ label, value }))}
         safetyInstruction="Only continue if someone is nearby, your full body is visible, and the floor area is clear."
         statusItems={[
-          { label: "Camera", value: "preview scaffold" },
+          {
+            label: "Camera",
+            value: permissionLabel(cameraStatus?.permissionState),
+          },
           { label: "Safety option", value: "skip available" },
         ]}
         title="Floor-rising test"
@@ -81,7 +88,7 @@ export function FloorRisingScreen({ flow }: { flow: AssessmentFlow }) {
             should be skipped and the dashboard should explain why.
           </SafetyCallout>
         )}
-        <CameraSetup />
+        <CameraSetup onStatusChange={setCameraStatus} />
       </TestStartPanel>
     );
   }

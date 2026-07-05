@@ -1,13 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { CameraSetup } from "@/components/assessment/CameraSetup";
 import { ChairStandDemo } from "@/components/assessment/demos/ChairStandDemo";
+import { MotionSensorStatus } from "@/components/assessment/MotionSensorStatus";
 import { TestStartPanel } from "@/components/assessment/TestStartPanel";
 import { FormGrid, TextField } from "@/components/assessment/ui/Fields";
+import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
 import { getDemoChairStandMetrics } from "@/lib/vision/chair-stand";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
+import type { CameraSupportStatus } from "@/lib/vision/camera";
+import type { MotionSupportStatus } from "@/types/motion";
 
 export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
   const {
@@ -18,6 +23,8 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
     blockedBySafety,
     markChairStoppedOrUnsafe,
   } = flow;
+  const [motionStatus, setMotionStatus] = useState<MotionSupportStatus>();
+  const [cameraStatus, setCameraStatus] = useState<CameraSupportStatus>();
 
   if (chairStandPhase === "demo") {
     return (
@@ -62,8 +69,17 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
         ].map(([label, value]) => ({ label, value }))}
         safetyInstruction="Use a stable chair, keep both feet flat, and stop if you feel dizzy, breathless, or unsafe."
         statusItems={[
-          { label: "Sensor", value: "ready" },
-          { label: "Camera", value: "optional" },
+          {
+            label: "Motion",
+            value: permissionLabel(motionStatus?.permissionState),
+          },
+          {
+            label: "Camera",
+            value:
+              cameraStatus?.permissionState === "granted"
+                ? "ready"
+                : `optional · ${permissionLabel(cameraStatus?.permissionState)}`,
+          },
         ]}
         title="Chair stand test"
       >
@@ -73,6 +89,8 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
             go to the dashboard.
           </SafetyCallout>
         )}
+        <MotionSensorStatus onStatusChange={setMotionStatus} />
+        <CameraSetup onStatusChange={setCameraStatus} />
       </TestStartPanel>
     );
   }

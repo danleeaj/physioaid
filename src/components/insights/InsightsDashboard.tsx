@@ -32,7 +32,10 @@ export function InsightsDashboard() {
           </h1>
           <p className="max-w-3xl text-[length:var(--text-lead)] text-[var(--muted)]">
             Aggregate screening patterns to support programme placement and
-            community capacity planning.
+            community capacity planning. Built only from screenings where the
+            participant explicitly consented to contribute, with a
+            self-reported neighbourhood — never GPS — and minimum cell sizes
+            before anything is shown.
           </p>
           <p className="max-w-3xl rounded-[var(--radius-control)] bg-[var(--surface-muted)] p-3 text-[length:var(--text-label)] text-[var(--muted-strong)]">
             {DEMO_NOTE}

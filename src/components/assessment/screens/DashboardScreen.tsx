@@ -52,6 +52,7 @@ export function DashboardScreen({ flow }: { flow: AssessmentFlow }) {
     analytics,
     demographics,
     contact,
+    consent,
     safety,
     scoredQuestionnaire,
     chairStand,
@@ -79,7 +80,7 @@ export function DashboardScreen({ flow }: { flow: AssessmentFlow }) {
           ? crypto.randomUUID()
           : `session-${Date.now()}`,
       createdAt: new Date().toISOString(),
-      consent: { assessmentConsent: true, researchConsent: false },
+      consent,
       emergencyContact: contact,
       demographics,
       safetyScreen: safety,

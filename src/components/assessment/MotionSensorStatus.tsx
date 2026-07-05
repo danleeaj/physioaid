@@ -1,17 +1,27 @@
 "use client";
 
 import { Smartphone } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getMotionSupportStatus,
   requestMotionPermission,
 } from "@/lib/sensors/browser-motion";
 import type { MotionSupportStatus } from "@/types/motion";
 
-export function MotionSensorStatus() {
+export function MotionSensorStatus({
+  onStatusChange,
+}: {
+  /** Reports the live permission state so parent screens can show it honestly. */
+  onStatusChange?: (status: MotionSupportStatus) => void;
+} = {}) {
   const [status, setStatus] = useState<MotionSupportStatus>(() =>
     getMotionSupportStatus(),
   );
+
+  useEffect(() => {
+    onStatusChange?.(status);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- notify on status change only
+  }, [status]);
 
   async function handleRequestPermission() {
     setStatus(await requestMotionPermission());

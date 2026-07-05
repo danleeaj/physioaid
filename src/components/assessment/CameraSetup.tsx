@@ -9,7 +9,12 @@ import {
   stopCameraPreview,
 } from "@/lib/vision/camera";
 
-export function CameraSetup() {
+export function CameraSetup({
+  onStatusChange,
+}: {
+  /** Reports the live permission state so parent screens can show it honestly. */
+  onStatusChange?: (status: CameraSupportStatus) => void;
+} = {}) {
   const [status, setStatus] = useState<CameraSupportStatus>(() =>
     getCameraSupportStatus(),
   );
@@ -20,6 +25,11 @@ export function CameraSetup() {
   useEffect(() => {
     return () => stopCameraPreview(streamRef.current);
   }, []);
+
+  useEffect(() => {
+    onStatusChange?.(status);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- notify on status change only
+  }, [status]);
 
   async function handleStartPreview() {
     const result = await requestCameraPreview();

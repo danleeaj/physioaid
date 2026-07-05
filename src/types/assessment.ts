@@ -10,6 +10,7 @@ export type AbilityConfidenceProfile =
 
 export type AssessmentStep =
   | "landing"
+  | "consent"
   | "safety"
   | "emergency_contact"
   | "demographics"
@@ -37,6 +38,11 @@ export type Demographics = {
   age: number;
   livingSituation: string;
   fallHistory: "none" | "near_fall" | "fall";
+  /**
+   * Coarse, self-reported planning area — collected only with research
+   * consent for aggregate programme planning. Never derived from GPS.
+   */
+  planningArea?: string;
 };
 
 export type SafetyScreenResult = {

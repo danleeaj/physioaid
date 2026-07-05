@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ProgressBar } from "@/components/assessment/ProgressBar";
 import { ChairStandScreen } from "@/components/assessment/screens/ChairStandScreen";
+import { ConsentScreen } from "@/components/assessment/screens/ConsentScreen";
 import { ContactScreen } from "@/components/assessment/screens/ContactScreen";
 import { DashboardScreen } from "@/components/assessment/screens/DashboardScreen";
 import { FloorRisingScreen } from "@/components/assessment/screens/FloorRisingScreen";
@@ -83,6 +84,14 @@ export function AssessmentApp() {
                 onStart={next}
               />
             )}
+            {currentStep === "consent" && (
+              <ConsentScreen
+                consent={flow.consent}
+                demographics={flow.demographics}
+                setConsent={flow.setConsent}
+                setDemographics={flow.setDemographics}
+              />
+            )}
             {currentStep === "safety" && (
               <SafetyScreen
                 blockedBySafety={blockedBySafety}
@@ -131,7 +140,10 @@ export function AssessmentApp() {
             </button>
             <button
               className="primary-action w-full flex-1"
-              disabled={isPhysicalDemoScreen}
+              disabled={
+                isPhysicalDemoScreen ||
+                (currentStep === "consent" && !flow.consent.assessmentConsent)
+              }
               onClick={next}
               type="button"
             >

@@ -125,6 +125,18 @@ export function ReportView({ id }: { id: string }) {
                 : "Not provided"
             }
           />
+          <Field
+            label="Aggregate contribution"
+            value={
+              session.consent.researchConsent
+                ? `Consented${
+                    session.demographics.planningArea
+                      ? ` · ${session.demographics.planningArea}`
+                      : ""
+                  } (anonymised, aggregate-only)`
+                : "Not consented — results stay on this device"
+            }
+          />
         </div>
 
         <SectionTitle>Safety screen</SectionTitle>
