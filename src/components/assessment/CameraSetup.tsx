@@ -44,7 +44,7 @@ export function CameraSetup() {
           <div>
             <p className="font-semibold">Camera vision scaffold</p>
             <p className="text-base text-[var(--muted)]">{status.message}</p>
-            <p className="status-pill mt-3 w-fit bg-[var(--blue-soft)] text-[var(--blue)]">
+            <p className="status-pill status-pill--ready mt-3 w-fit">
               Status: {status.permissionState.replaceAll("_", " ")}
             </p>
           </div>
