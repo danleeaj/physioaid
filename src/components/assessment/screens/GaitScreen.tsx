@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { GaitWalkDemo } from "@/components/assessment/demos/GaitWalkDemo";
 import { MotionSensorStatus } from "@/components/assessment/MotionSensorStatus";
 import { TestStartPanel } from "@/components/assessment/TestStartPanel";
 import { FormGrid, TextField } from "@/components/assessment/ui/Fields";
+import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
 import { getDemoMotionMetrics } from "@/lib/sensors/motion-summary";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
+import type { MotionSupportStatus } from "@/types/motion";
 
 function DistanceSelector({
   onChange,
@@ -56,6 +59,7 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
     markGaitStoppedOrUnstable,
     startGaitCountdown,
   } = flow;
+  const [motionStatus, setMotionStatus] = useState<MotionSupportStatus>();
 
   if (gaitPhase === "demo") {
     return (
@@ -104,7 +108,10 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
         ]}
         safetyInstruction="Walk at your usual safe pace with the phone held steadily or placed in your pocket."
         statusItems={[
-          { label: "Motion", value: "sensor ready" },
+          {
+            label: "Motion",
+            value: permissionLabel(motionStatus?.permissionState),
+          },
           { label: "Distance", value: `${gaitDistanceMeters}m` },
         ]}
         title="Gait walk test"
@@ -115,7 +122,7 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
             to gait walking today. Higher-risk testing will be skipped.
           </SafetyCallout>
         )}
-        <MotionSensorStatus />
+        <MotionSensorStatus onStatusChange={setMotionStatus} />
         <DistanceSelector
           onChange={setGaitDistanceMeters}
           value={gaitDistanceMeters}
