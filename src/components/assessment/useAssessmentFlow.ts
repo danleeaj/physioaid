@@ -18,6 +18,7 @@ import { getDemoMotionMetrics } from "@/lib/sensors/motion-summary";
 import type {
   AssessmentStep,
   ChairStandMetrics,
+  ConsentRecord,
   Demographics,
   EmergencyContact,
   FloorRisingMetrics,
@@ -27,6 +28,7 @@ import type {
 
 export const steps: AssessmentStep[] = [
   "landing",
+  "consent",
   "safety",
   "emergency_contact",
   "questionnaire",
@@ -57,6 +59,10 @@ export function useAssessmentFlow() {
   const [floorRisingPhase, setFloorRisingPhase] =
     useState<PhysicalTestPhase>("demo");
   const [gaitDistanceMeters, setGaitDistanceMeters] = useState(4);
+  const [consent, setConsent] = useState<ConsentRecord>({
+    assessmentConsent: false,
+    researchConsent: false,
+  });
   const [safety, setSafety] = useState<SafetyScreenResult>({
     dizziness: false,
     breathlessness: false,
@@ -179,6 +185,7 @@ export function useAssessmentFlow() {
   function loadDemo() {
     const demo = createDemoSession();
     setDemoLoaded(true);
+    setConsent(demo.consent);
     setSafety(demo.safetyScreen);
     setContact(demo.emergencyContact);
     setDemographics(demo.demographics);
@@ -247,6 +254,8 @@ export function useAssessmentFlow() {
     setFloorRisingPhase,
     gaitDistanceMeters,
     setGaitDistanceMeters,
+    consent,
+    setConsent,
     safety,
     setSafety,
     contact,

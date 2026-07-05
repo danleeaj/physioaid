@@ -33,6 +33,22 @@ const en = {
     "Higher-risk tests are skipped when an earlier screen suggests it is not safe to continue.",
   "landing.plannersLink": "For planners: population insights (demo)",
 
+  // Consent screen
+  "consent.title": "Before we begin",
+  "consent.support": "Two quick questions about how your answers are used.",
+  "consent.assessment.label":
+    "I understand this is a guided screening — not a diagnosis — and I agree to take part today.",
+  "consent.research.title": "Help Singapore plan better ageing support",
+  "consent.research.body":
+    "You can contribute your anonymised results — never your name or contact details — to aggregate statistics that help place community programmes like Active Ageing Centres where they are needed. This is optional, and everything works the same if you say no.",
+  "consent.research.yes": "Yes, count my anonymised results in",
+  "consent.research.no": "No, keep my results on this device only",
+  "consent.area.label": "Your neighbourhood",
+  "consent.area.help":
+    "Helps planners see which neighbourhoods need more support. Choose the area, not your address.",
+  "consent.privacyNote":
+    "We never track your location — this app cannot access GPS at all. Your neighbourhood is only ever what you choose to tell us, and results are combined with many others before anyone sees them.",
+
   // Safety screen
   "safety.title": "Let's check it is safe to start",
   "safety.answer.yes": "Yes",
@@ -116,6 +132,9 @@ const en = {
   "community.join": "Join",
   "community.joined": "Joined",
   "community.activeDays": "{count} of {total} active days",
+  "community.practised": "I practised today",
+  "community.practisedDone": "Practised today",
+  "community.nearYou": "Near you",
   "community.demoNote":
     "Demonstration content — community posts and activities shown here are fictional.",
 } as const;
@@ -133,6 +152,20 @@ const zh: Partial<Record<MessageKey, string>> = {
   "nav.demoLoaded": "已载入演示数据。",
   "nav.openReport": "打开报告",
   "nav.backToAssessment": "返回评估",
+  "consent.title": "开始之前",
+  "consent.support": "两个关于您的回答如何被使用的简短问题。",
+  "consent.assessment.label":
+    "我了解这是一次引导式筛查（不是诊断），并同意今天参与。",
+  "consent.research.title": "帮助新加坡更好地规划乐龄支持",
+  "consent.research.body":
+    "您可以将匿名结果（绝不包含姓名或联系方式）贡献给汇总统计，帮助在有需要的社区设置活跃乐龄中心等项目。这是自愿的，选择“否”也不影响使用。",
+  "consent.research.yes": "好，把我的匿名结果算进去",
+  "consent.research.no": "不，结果只保留在本设备",
+  "consent.area.label": "您的社区",
+  "consent.area.help":
+    "帮助规划人员了解哪些社区需要更多支持。只需选择区域，不需要地址。",
+  "consent.privacyNote":
+    "我们绝不追踪您的位置——本应用完全无法使用 GPS。您的社区只来自您自己的选择，且结果会与许多人的数据合并后才会被查看。",
   "progress.step": "第 {current} 步，共 {total} 步",
   "listen.label": "朗读",
   "listen.stop": "停止",
@@ -208,6 +241,9 @@ const zh: Partial<Record<MessageKey, string>> = {
   "community.join": "加入",
   "community.joined": "已加入",
   "community.activeDays": "{total} 天中有 {count} 天保持活跃",
+  "community.practised": "我今天练习了",
+  "community.practisedDone": "今天已练习",
+  "community.nearYou": "在您附近",
   "community.demoNote": "演示内容——此处的社区帖子和活动均为虚构。",
 };
 
