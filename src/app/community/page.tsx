@@ -1,9 +1,5 @@
-import { CommunityApp } from "@/components/community/CommunityApp";
-
-export const metadata = {
-  title: "Community hub — Physio-Aid",
-};
+import { redirect } from "next/navigation";
 
 export default function CommunityPage() {
-  return <CommunityApp />;
+  redirect("/");
 }

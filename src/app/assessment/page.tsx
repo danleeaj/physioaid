@@ -1,5 +1,5 @@
-import { AssessmentApp } from "@/components/assessment/AssessmentApp";
+import { redirect } from "next/navigation";
 
 export default function AssessmentPage() {
-  return <AssessmentApp />;
+  redirect("/");
 }

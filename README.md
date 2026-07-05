@@ -37,19 +37,45 @@ If the dev server reports too many open files, use polling mode:
 WATCHPACK_POLLING=true WATCHPACK_POLLING_INTERVAL=1000 npm run dev
 ```
 
-## Demo Path
+## App Structure
 
-Use the `Load Mr Tan demo` button, then walk through:
+The app is a mobile-first PWA care companion rendered in a phone-width shell:
 
 ```txt
-Landing -> Safety + Consent -> Emergency Contact -> Demographics -> Falls Efficacy / Confidence -> Chair Stand -> Motion Sensor Gait Walking -> Floor-Rising -> Ability-Confidence Dashboard -> Report
+Signed out
+└── Sign In (Continue with Mr Tan demo is the live path)
+
+Signed in — fixed bottom tabs
+├── Assessment (default home: today card, last result, next step, history preview)
+├── Community (gentle activity feed, weekly challenge)
+└── Resources (search + Nearby / Videos / Clinics)
+
+Secondary screens
+├── Guided Assessment Flow
+├── Assessment Result
+├── Assessment History (+ detail)
+├── Profile (language, text size, sign out)
+├── Care Partner Access
+└── Privacy / Consent
+```
+
+`/insights` (population planner demo) and `/report/[id]` (printable clinician
+report) remain standalone routes.
+
+## Demo Path
+
+Use `Continue with Mr Tan demo` on the Sign In screen, then `Start assessment`
+on the Assessment tab and walk through:
+
+```txt
+Safety + Consent -> Emergency Contact -> Demographics -> Falls Efficacy / Confidence -> Chair Stand -> Motion Sensor Gait Walking -> Floor-Rising -> Assessment Result -> Save to history
 ```
 
 The demo remains usable even before camera or motion permissions are implemented.
 
 The flow is safety-gated:
 
-- If safety screening fails, physical testing stops and the app routes to the dashboard.
+- If safety screening fails, physical testing stops and the app routes to the result summary.
 - If chair stand is stopped, unsafe, or too poor, the user must not proceed to gait walking.
 - If gait walking is stopped or unstable, the user must not proceed to floor-rising.
 - Floor-rising is the highest-risk test and must keep skip, manual, and demo fallbacks.
