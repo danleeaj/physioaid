@@ -237,29 +237,47 @@ export function DashboardScreen({ flow }: { flow: AssessmentFlow }) {
           {t("dashboard.careLinkageTitle")}
         </h2>
         <div className="quiet-card divide-y divide-[var(--line)]">
-          {careLinkageOptions.map((option) => (
-            <div className="flex items-center gap-4 p-4" key={option.id}>
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--primary-soft)] text-[var(--primary-dark)]">
-                <HeartHandshake aria-hidden size={22} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-bold">
-                  {clinicalText(
-                    lang,
-                    `careLinkage.${option.id}.title`,
-                    option.title,
-                  )}
-                </p>
-                <p className="text-[length:var(--text-label)] text-[var(--muted)]">
-                  {clinicalText(
-                    lang,
-                    `careLinkage.${option.id}.description`,
-                    option.description,
-                  )}
-                </p>
+          {careLinkageOptions.map((option) => {
+            const content = (
+              <>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--primary-soft)] text-[var(--primary-dark)]">
+                  <HeartHandshake aria-hidden size={22} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold">
+                    {clinicalText(
+                      lang,
+                      `careLinkage.${option.id}.title`,
+                      option.title,
+                    )}
+                  </p>
+                  <p className="text-[length:var(--text-label)] text-[var(--muted)]">
+                    {clinicalText(
+                      lang,
+                      `careLinkage.${option.id}.description`,
+                      option.description,
+                    )}
+                  </p>
+                </div>
+              </>
+            );
+
+            return "url" in option && option.url ? (
+              <a
+                key={option.id}
+                href={option.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 transition-colors hover:bg-[var(--primary-soft)]/30"
+              >
+                {content}
+              </a>
+            ) : (
+              <div className="flex items-center gap-4 p-4" key={option.id}>
+                {content}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
