@@ -21,6 +21,8 @@ import { careLinkageOptions } from "@/content/care-linkage";
 import { profileCopy } from "@/content/clinical-copy";
 import { DECISION_SUPPORT_DISCLAIMER } from "@/config/clinical-config";
 import { saveSessionForReport } from "@/lib/report-session";
+import { saveAssessment } from "@/lib/assessment-history";
+import { useAuth } from "@/components/auth/AuthProvider";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
 import type { AssessmentSession, RiskCategory } from "@/types/assessment";
 
@@ -48,6 +50,7 @@ const riskIcons = {
 export function DashboardScreen({ flow }: { flow: AssessmentFlow }) {
   const router = useRouter();
   const { t, lang } = useLanguage();
+  const { user } = useAuth();
   const {
     analytics,
     demographics,
@@ -96,6 +99,9 @@ export function DashboardScreen({ flow }: { flow: AssessmentFlow }) {
       },
     };
     const id = saveSessionForReport(session);
+    if (user) {
+      saveAssessment(user.uid, session).catch(() => {});
+    }
     router.push(`/report/${id}`);
   }
 
