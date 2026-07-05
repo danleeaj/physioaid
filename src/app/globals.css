@@ -1,25 +1,62 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   PHYSIO-AID DESIGN SYSTEM — "Grounded"
+   ----------------------------------------------------------------------------
+   Every visual decision lives in the :root token block below. Change a token,
+   the whole app re-skins consistently. Use the component classes below instead
+   of ad-hoc colour/spacing utilities.
+
+   --primary-soft and --blue-soft are DERIVED from --primary via color-mix, so
+   changing the one --primary line re-tints selected states, pills and progress
+   automatically. Colours target WCAG AAA for body / large text.
+   ========================================================================== */
+
 :root {
-  --background: #f6f8f5;
-  --foreground: #17201c;
+  /* surfaces & text */
+  --background: #f7f5f1;   /* warm paper, calm & low-glare       */
+  --foreground: #1d1c19;   /* warm near-black, ~14:1 on bg       */
   --surface: #ffffff;
-  --surface-muted: #eef5f1;
-  --muted: #5f6f68;
-  --muted-strong: #40514a;
-  --line: #d7e0d9;
-  --primary: #0f766e;
-  --primary-dark: #115e59;
-  --primary-soft: #dff3ef;
-  --blue: #2563eb;
-  --blue-soft: #e8f0ff;
-  --success: #2f7d52;
-  --success-soft: #e7f5ec;
-  --warning: #9a5b13;
-  --warning-soft: #fff4db;
-  --danger: #9f2f2f;
-  --danger-soft: #fdeceb;
-  --shadow-card: 0 18px 50px rgba(23, 32, 28, 0.08);
+  --surface-muted: #efece6; /* tinted fill — use INSTEAD of borders */
+  --muted: #5b584f;         /* secondary text, ~6:1              */
+  --muted-strong: #403a30;  /* critical labels                  */
+  --line: #e6e1d8;          /* hairlines only, used sparingly    */
+
+  /* brand */
+  --primary: #12564e;       /* deep teal-green                  */
+  --primary-dark: #0e463f;  /* hover                            */
+  --primary-soft: color-mix(in srgb, var(--primary) 12%, #ffffff);
+
+  /* accent (progress dots, sensor-ready) — tracks primary */
+  --blue: var(--primary);
+  --blue-soft: color-mix(in srgb, var(--primary) 12%, #ffffff);
+
+  /* semantic */
+  --success: #1f6b4a;
+  --success-soft: #e4f0e8;
+  --warning: #8a5210;
+  --warning-soft: #f7edd7;
+  --danger: #9a3b2b;        /* emergency call + safety-stop only */
+  --danger-soft: #f7e9e4;
+
+  /* radius — control = buttons/inputs, card = panels */
+  --radius-control: 1rem;    /* 16px */
+  --radius-card: 1.25rem;    /* 20px */
+  --radius-pill: 999px;
+
+  /* elevation */
+  --shadow-card: 0 22px 55px rgba(30, 25, 20, 0.09);
+
+  /* type scale (base 18px, line-height 1.6) */
+  --text-caption: 0.875rem;  /* 14px */
+  --text-label: 0.9375rem;   /* 15px */
+  --text-body: 1.125rem;     /* 18px */
+  --text-lead: 1.25rem;      /* 20px */
+  --text-title: 1.75rem;     /* 28px — screen titles */
+  --text-display: 2.1875rem; /* 35px — landing / hero headline */
+
+  /* fonts */
+  --font-head: var(--font-sans);
 }
 
 @theme inline {
@@ -35,16 +72,22 @@ html {
 }
 
 body {
-  background:
-    linear-gradient(180deg, rgba(223, 243, 239, 0.42), rgba(246, 248, 245, 0) 360px),
-    var(--background);
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
-  font-size: 18px;
+  font-size: var(--text-body);
   line-height: 1.6;
   min-height: 100%;
   overflow-wrap: break-word;
   text-wrap: pretty;
+}
+
+/* One heading system — headings inherit the direction's --font-head */
+h1, h2, h3 {
+  font-family: var(--font-head);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-wrap: balance;
 }
 
 button,
@@ -54,22 +97,28 @@ textarea {
   font: inherit;
 }
 
+/* AAA-grade focus ring */
 button:focus-visible,
 a:focus-visible,
-input:focus-visible {
-  outline: 4px solid rgba(37, 99, 235, 0.32);
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 4px solid color-mix(in srgb, var(--primary) 55%, transparent);
   outline-offset: 3px;
 }
+
+/* -------------------------------- COMPONENTS ------------------------------ */
 
 .primary-action,
 .secondary-action {
   align-items: center;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-control);
   display: inline-flex;
   font-weight: 700;
+  font-size: var(--text-lead);
   gap: 0.5rem;
   justify-content: center;
-  min-height: 3.5rem;
+  min-height: 3.5rem;              /* 56px — AAA touch target */
   padding: 0.75rem 1.25rem;
   text-align: center;
   transition:
@@ -81,26 +130,29 @@ input:focus-visible {
 
 .primary-action {
   background: var(--primary);
+  border: 1px solid var(--primary);
   color: #ffffff;
 }
 
 .primary-action:hover:not(:disabled) {
   background: var(--primary-dark);
+  border-color: var(--primary-dark);
   transform: translateY(-1px);
 }
 
 .primary-action:disabled {
   background: #93a7a0;
+  border-color: #93a7a0;
 }
 
 .secondary-action {
-  background: #ffffff;
-  border: 1px solid var(--line);
+  background: var(--surface);
+  border: 1.5px solid var(--line);
   color: var(--foreground);
 }
 
 .secondary-action:hover:not(:disabled) {
-  border-color: #aebdb5;
+  border-color: var(--primary);
   background: var(--surface-muted);
 }
 
@@ -108,47 +160,311 @@ input:focus-visible {
   color: #8a9891;
 }
 
+/* Text-only link button (e.g. "View demo", "Skip for now") */
+.link-action {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: var(--text-label);
+  min-height: 3rem;
+  padding: 0 0.5rem;
+}
+
 .panel-card {
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
 }
 
 .quiet-card {
-  background: #ffffff;
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-card);
 }
 
 .eyebrow {
   color: var(--primary-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-caption);
   font-weight: 800;
-  letter-spacing: 0;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .status-pill {
   align-items: center;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: inline-flex;
-  font-size: 0.95rem;
+  font-size: var(--text-label);
   font-weight: 700;
   gap: 0.4rem;
   min-height: 2.25rem;
   padding: 0.35rem 0.75rem;
 }
 
-.input-field {
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: 0.375rem;
-  min-height: 3.5rem;
-  padding: 0.75rem 1rem;
+.status-pill--ready {
+  background: var(--primary-soft);
+  border-color: transparent;
+  color: var(--primary-dark);
 }
 
+.input-field {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-control);
+  min-height: 3.5rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+}
+
+.input-field:focus {
+  border-color: var(--primary);
+}
+
+/* Selectable choice row (Confidence, list options) */
+.choice-option {
+  align-items: center;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-card);
+  display: flex;
+  gap: 1rem;
+  min-height: 4rem;
+  padding: 1rem 1.125rem;
+  font-size: var(--text-lead);
+  font-weight: 600;
+  width: 100%;
+}
+
+.choice-option[aria-checked="true"],
+.choice-option[data-selected="true"] {
+  background: var(--primary-soft);
+  border: 2px solid var(--primary);
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+/* Inline alert / safety callout (warning + danger variants) */
+.callout {
+  border-radius: var(--radius-card);
+  border-left: 4px solid var(--warning);
+  background: var(--warning-soft);
+  color: var(--muted-strong);
+  padding: 1rem 1.125rem;
+  font-size: var(--text-label);
+  line-height: 1.5;
+}
+
+.callout--danger {
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+/* Progress strip */
+.progress-track {
+  background: var(--primary-soft);
+  border-radius: var(--radius-pill);
+  height: 6px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.progress-fill {
+  background: var(--primary);
+  height: 100%;
+  transition: width 400ms ease;
+}
+
+/* Hero score ring — used ONLY for the engagement layer's weekly-activity
+   number (never on the clinical dashboard). Set --score (0–100). */
+.score-ring {
+  align-items: center;
+  aspect-ratio: 1;
+  background: conic-gradient(
+    var(--primary) 0 calc(var(--score, 0) * 1%),
+    var(--surface-muted) calc(var(--score, 0) * 1%) 100%
+  );
+  border-radius: var(--radius-pill);
+  display: flex;
+  justify-content: center;
+  width: 9.5rem;
+}
+.score-ring > * { /* the inner disc holding the number */
+  aspect-ratio: 1;
+  background: var(--background);
+  border-radius: var(--radius-pill);
+  display: grid;
+  place-items: center;
+  width: 76%;
+}
+
+/* ---------------------- ENGAGEMENT (feed / clips / community) ------------- */
+
+/* Feed post — activity or community update */
+.feed-card {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  padding: 1rem;
+}
+
+/* Cheer / kudos button — the encouragement action */
+.cheer-button {
+  align-items: center;
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius-pill);
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 700;
+  font-size: var(--text-caption);
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.9rem;
+}
+.cheer-button[data-cheered="true"] {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+/* Join pill — for community activities (default = joinable, joined = soft) */
+.join-pill {
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius-pill);
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: var(--text-label);
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+}
+.join-pill[data-joined="true"] {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+/* Trainer clip thumbnail — pair with a striped/image cover + centered play */
+.clip-cover {
+  align-items: center;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-muted);
+  border-radius: var(--radius-card);
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+.clip-play {
+  align-items: center;
+  background: var(--primary);
+  border-radius: var(--radius-pill);
+  display: flex;
+  height: 3.25rem;
+  justify-content: center;
+  width: 3.25rem;
+}
+.clip-play::after { /* CSS play triangle — no SVG needed */
+  border-bottom: 0.55rem solid transparent;
+  border-left: 0.9rem solid #ffffff;
+  border-top: 0.55rem solid transparent;
+  content: "";
+  margin-left: 0.25rem;
+}
+
+/* Streak / summary stat tile — first tile can carry .stat-tile--accent */
+.stat-tile {
+  background: var(--surface-muted);
+  border-radius: var(--radius-control);
+  padding: 0.875rem 0.625rem;
+  text-align: center;
+}
+.stat-tile--accent {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+/* ------------------------- POLICY / ANALYTICS DASHBOARD ------------------- */
+
+/* KPI card — big number + delta */
+.kpi-card {
+  background: var(--surface-muted);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+}
+.kpi-card .kpi-value { font-size: 2.125rem; font-weight: 800; line-height: 1; }
+.kpi-card .kpi-delta { color: var(--primary); font-size: var(--text-caption); font-weight: 700; }
+
+/* Choropleth cell — set --intensity (0–1) for the heat.
+   Text auto-flips to white past ~0.6 via a companion .heat-cell--strong. */
+.heat-cell {
+  background: color-mix(in srgb, var(--primary) calc(var(--intensity, 0.3) * 100%), #ffffff);
+  border-radius: var(--radius-control);
+  padding: 0.875rem;
+}
+.heat-cell--strong { color: #ffffff; }
+
+/* Planning-signal callout — aggregate insight, never individual */
+.signal-card {
+  background: var(--surface-muted);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-control);
+  padding: 1rem 1.125rem;
+}
+
+/* ---------------------- LANGUAGE & AUDIO ACCESSIBILITY -------------------- */
+
+/* Language switcher — segmented pills. Add [data-active] to the current one. */
+.lang-switch {
+  background: var(--surface-muted);
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+.lang-switch button {
+  background: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+}
+.lang-switch button[data-active="true"] {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+/* Listen / read-aloud control — drive with the Web Speech API using the
+   active language's BCP-47 code (en-SG, zh-CN, ms-MY, ta-IN). */
+.listen-button {
+  align-items: center;
+  background: var(--primary-soft);
+  border: none;
+  border-radius: var(--radius-pill);
+  color: var(--primary);
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 700;
+  font-size: var(--text-caption);
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.9rem;
+}
+.listen-button[data-speaking="true"] { background: var(--primary); color: #ffffff; }
+
+/* zh / ta script support — fonts loaded via next/font, applied on <html lang> */
+:lang(zh) { font-family: var(--font-noto-sc, "Noto Sans SC"), var(--font-sans); }
+:lang(ta) {
+  font-family: var(--font-noto-tamil, "Noto Sans Tamil"), var(--font-sans);
+  line-height: 1.7;
+}
+
+/* -------------------------------- MOTION ---------------------------------- */
 .demo-visual svg {
   overflow: visible;
 }
@@ -171,56 +487,24 @@ input:focus-visible {
 }
 
 @keyframes chair-ghost {
-  0%,
-  40% {
-    opacity: 0.75;
-    transform: translate(0, 0);
-  }
-
-  65%,
-  100% {
-    opacity: 0.25;
-    transform: translate(-10px, -4px);
-  }
+  0%, 40% { opacity: 0.75; transform: translate(0, 0); }
+  65%, 100% { opacity: 0.25; transform: translate(-10px, -4px); }
 }
 
 @keyframes chair-active {
-  0%,
-  35% {
-    opacity: 0.2;
-    transform: translate(18px, 28px);
-  }
-
-  65%,
-  100% {
-    opacity: 1;
-    transform: translate(0, 0);
-  }
+  0%, 35% { opacity: 0.2; transform: translate(18px, 28px); }
+  65%, 100% { opacity: 1; transform: translate(0, 0); }
 }
 
 @keyframes gait-walk {
-  0% {
-    transform: translateX(116px);
-  }
-
-  50% {
-    transform: translateX(280px);
-  }
-
-  100% {
-    transform: translateX(384px);
-  }
+  0% { transform: translateX(116px); }
+  50% { transform: translateX(280px); }
+  100% { transform: translateX(384px); }
 }
 
 @keyframes floor-zone {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-
-  50% {
-    opacity: 1;
-  }
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -230,28 +514,37 @@ input:focus-visible {
   .floor-clear-zone {
     animation: none;
   }
+  .chair-stand-ghost { opacity: 0.35; }
+  .chair-stand-active { opacity: 1; }
+  .gait-walker { transform: translateX(280px); }
+}
 
-  .chair-stand-ghost {
-    opacity: 0.35;
-  }
-
-  .chair-stand-active {
-    opacity: 1;
-  }
-
-  .gait-walker {
-    transform: translateX(280px);
+/* -------------------------------- RESPONSIVE ------------------------------ */
+@media (max-width: 640px) {
+  .primary-action,
+  .secondary-action {
+    min-height: 3.75rem;   /* 60px on phones */
+    width: 100%;
   }
 }
 
-@media (max-width: 640px) {
+/* -------------------------------- PRINT (report) -------------------------- */
+@media print {
+  html,
   body {
-    font-size: 17px;
+    background: #ffffff;
   }
-
-  .primary-action,
-  .secondary-action {
-    min-height: 3.75rem;
-    width: 100%;
+  body {
+    font-size: 12pt;
+  }
+  .panel-card,
+  .quiet-card,
+  .kpi-card {
+    border-color: #d0d0d0;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+  .no-print {
+    display: none !important;
   }
 }
