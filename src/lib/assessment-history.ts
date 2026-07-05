@@ -18,7 +18,10 @@ export async function saveAssessment(
   uid: string,
   session: AssessmentSession,
 ): Promise<void> {
-  await setDoc(doc(assessmentsRef(uid), session.id), session);
+  await setDoc(doc(assessmentsRef(uid), session.id), {
+    ...session,
+    userId: uid,
+  });
 }
 
 export async function getAssessmentHistory(
