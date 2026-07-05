@@ -28,7 +28,7 @@ export function MotionSensorStatus() {
         <div className="grid gap-2">
           <p className="font-semibold">Motion sensor scaffold</p>
           <p className="text-base text-[var(--muted)]">{status.message}</p>
-          <p className="status-pill w-fit bg-[var(--blue-soft)] text-[var(--blue)]">
+          <p className="status-pill status-pill--ready w-fit">
             Status: {status.permissionState.replaceAll("_", " ")}
           </p>
           {status.requiresUserGesture && status.permissionState !== "granted" && (
