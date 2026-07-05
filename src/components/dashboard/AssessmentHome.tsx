@@ -4,6 +4,7 @@ import {
   Activity,
   ArrowRight,
   ChevronRight,
+  FlaskConical,
   Footprints,
   UserRound,
 } from "lucide-react";
@@ -85,8 +86,14 @@ export function AssessmentHome({
         {/* Last result card */}
         {lastResult && (
           <section className="app-card grid gap-2">
-            <p className="text-[length:var(--text-caption)] font-bold uppercase tracking-wide text-[var(--muted)]">
+            <p className="flex items-center gap-2 text-[length:var(--text-caption)] font-bold uppercase tracking-wide text-[var(--muted)]">
               {copy.lastResultTitle} · {lastResult.dateLabel}
+              {lastResult.sample && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-2 py-0.5 normal-case">
+                  <FlaskConical aria-hidden size={12} />
+                  Sample
+                </span>
+              )}
             </p>
             <p className="text-[length:var(--text-lead)] font-bold">
               {lastResult.overall}
@@ -138,6 +145,11 @@ export function AssessmentHome({
           <h2 className="px-1 text-[length:var(--text-body)] font-bold">
             {copy.historyTitle}
           </h2>
+          {preview.length === 0 && (
+            <p className="app-card text-[length:var(--text-label)] text-[var(--muted)]">
+              No saved checks yet. Your first mobility check will appear here.
+            </p>
+          )}
           {preview.map((entry) => (
             <button
               className="row-button"
@@ -146,8 +158,14 @@ export function AssessmentHome({
               type="button"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
+                <p className="flex items-center gap-2 text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
                   {entry.dateLabel}
+                  {entry.sample && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-2 py-0.5">
+                      <FlaskConical aria-hidden size={12} />
+                      Sample
+                    </span>
+                  )}
                 </p>
                 <p className="truncate font-bold">{entry.overall}</p>
                 <p className="text-[length:var(--text-label)] text-[var(--muted)]">

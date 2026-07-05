@@ -11,12 +11,18 @@ export const shellCopy = {
   signIn: {
     headline: "Move with more confidence.",
     supporting: "Simple mobility checks, progress history, and nearby support.",
+    continueGoogle: "Continue with Google",
+    signingIn: "Signing in…",
+    googleError:
+      "Google sign-in didn’t complete. You can try again or explore with the Mr Tan demo.",
     continueMobile: "Continue with mobile number",
     continueEmail: "Continue with email",
+    comingSoon: "Coming soon",
     carePartner: "Care partner sign in",
     demo: "Continue with Mr Tan demo",
     privacy: "Your assessment records stay private and secure.",
-    stubNote: "Sign-in is coming soon. Use the Mr Tan demo to explore the app.",
+    stubNote:
+      "Mobile and email sign-in are coming soon. Use the Mr Tan demo to explore the app.",
   },
   tabs: {
     assessment: "Assessment",
@@ -37,16 +43,20 @@ export const shellCopy = {
   },
   flow: {
     stage: (current: number, total: number) => `Stage ${current} of ${total}`,
+    exit: "Exit",
     exitTitle: "Leave this check?",
     exitBody:
       "Your answers so far will not be saved. You can start again any time.",
     exitConfirm: "Leave check",
     exitCancel: "Keep going",
+    loadSample: "Load sample answers (Mr Tan)",
+    sampleLoaded: "Sample answers loaded — you can change any of them.",
   },
   result: {
     title: "Assessment complete",
     saveToHistory: "Save to history",
     savedOnDevice: "Saved on this device",
+    openReport: "Open clinician report (print / PDF)",
     viewResources: "View resources",
     backToAssessment: "Back to Assessment",
   },
@@ -54,6 +64,9 @@ export const shellCopy = {
     title: "Assessment History",
     viewDetails: "View details",
     detailTitle: "Assessment detail",
+    samplePill: "Sample",
+    sampleTrend: "Sample history — Mr Tan demo",
+    empty: "No saved checks yet. Complete today’s mobility check to start your journal.",
   },
   community: {
     title: "Community",

@@ -13,6 +13,7 @@ import {
   loadTextSizePreference,
 } from "@/components/dashboard/ProfileScreen";
 import { useHistoryStore } from "@/components/dashboard/history-store";
+import { markPracticedToday } from "@/lib/streak";
 import { SignInScreen } from "@/components/layout/SignInScreen";
 import { TabBar, type ShellTab } from "@/components/layout/TabBar";
 import { CommunityTab } from "@/components/layout/tabs/CommunityTab";
@@ -58,7 +59,12 @@ export function AppShell() {
     useState<ResourceSegment>("nearby");
   // Care Partner Access is reachable from the signed-out Sign In screen too.
   const [signedOutCarePartner, setSignedOutCarePartner] = useState(false);
-  const { entries, addEntry } = useHistoryStore();
+  const historySession = user
+    ? ({ kind: "firebase", uid: user.uid } as const)
+    : demoSession
+      ? ({ kind: "demo" } as const)
+      : null;
+  const { entries, addSession, getSession } = useHistoryStore(historySession);
 
   useEffect(() => {
     loadTextSizePreference();
@@ -140,10 +146,12 @@ export function AppShell() {
       <main className="app-shell">
         {screen?.name === "flow" && (
           <AssessmentFlowScreen
-            demoMode={demoSession}
+            demoMode={demoSession && !user}
             onExit={() => resetToTab("assessment")}
-            onSaved={(entry) => {
-              addEntry(entry);
+            onSaved={(session) => {
+              addSession(session);
+              // Completing a check counts toward the weekly movement goal.
+              markPracticedToday();
               resetToTab("assessment");
             }}
             onViewResources={() => openResources("videos")}
@@ -160,7 +168,11 @@ export function AppShell() {
           (() => {
             const entry = entries.find((item) => item.id === screen.entryId);
             return entry ? (
-              <HistoryDetailScreen entry={entry} onBack={pop} />
+              <HistoryDetailScreen
+                entry={entry}
+                onBack={pop}
+                session={getSession(entry.id)}
+              />
             ) : (
               <HistoryScreen
                 entries={entries}
@@ -198,6 +210,7 @@ export function AppShell() {
             {tab === "community" && <CommunityTab />}
             {tab === "resources" && (
               <ResourcesTab
+                latestRisk={entries[0]?.riskCategory ?? null}
                 onSegmentChange={setResourcesSegment}
                 segment={resourcesSegment}
               />

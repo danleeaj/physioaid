@@ -1,19 +1,38 @@
 "use client";
 
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, FileText, FlaskConical } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { HistoryEntry } from "@/components/dashboard/demo-display-data";
 import { shellCopy } from "@/components/layout/copy";
 import { TopBar } from "@/components/layout/TopBar";
 import { DECISION_SUPPORT_DISCLAIMER } from "@/config/clinical-config";
+import { saveSessionForReport } from "@/lib/report-session";
+import type { AssessmentSession } from "@/types/assessment";
 
 /** Read-only detail view for a single history entry. */
 export function HistoryDetailScreen({
   entry,
+  session,
   onBack,
 }: {
   entry: HistoryEntry;
+  /** Full session when this entry came from a real saved assessment. */
+  session?: AssessmentSession | null;
   onBack: () => void;
 }) {
+  const router = useRouter();
+
+  function openReport() {
+    if (session) {
+      const id = saveSessionForReport(session);
+      router.push(`/report/${id}`);
+    } else {
+      // Sample entries have no stored session — the report route's demo
+      // fallback renders with its visible "Demo data" pill.
+      router.push("/report/sample");
+    }
+  }
+
   return (
     <>
       <TopBar onBack={onBack} title={shellCopy.history.detailTitle} />
@@ -22,6 +41,12 @@ export function HistoryDetailScreen({
           <p className="flex items-center gap-2 text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
             <CalendarDays aria-hidden size={16} />
             {entry.dateLabel}
+            {entry.sample && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-2 py-0.5">
+                <FlaskConical aria-hidden size={12} />
+                {shellCopy.history.samplePill}
+              </span>
+            )}
           </p>
           <p className="text-[length:var(--text-title)] font-bold">{entry.overall}</p>
         </section>
@@ -54,6 +79,12 @@ export function HistoryDetailScreen({
             <p className="mt-1 text-xl font-bold leading-tight">{entry.floorRiseLabel}</p>
           </div>
         </section>
+
+        {/* Clinician handoff — physio / OT / doctor opens the printable report */}
+        <button className="secondary-action w-full" onClick={openReport} type="button">
+          <FileText aria-hidden size={20} />
+          {shellCopy.result.openReport}
+        </button>
 
         <p className="text-[length:var(--text-label)] text-[var(--muted)]">
           {DECISION_SUPPORT_DISCLAIMER}
