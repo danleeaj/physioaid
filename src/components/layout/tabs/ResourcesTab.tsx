@@ -1,14 +1,20 @@
 "use client";
 
 import {
+  BarChart3,
   Building2,
+  CalendarDays,
   MapPin,
   Navigation,
   Phone,
   Search,
+  Sparkles,
 } from "lucide-react";
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { demoPerson } from "@/components/dashboard/demo-display-data";
 import { shellCopy } from "@/components/layout/copy";
+import type { RiskCategory } from "@/types/assessment";
 
 export type ResourceSegment = "nearby" | "videos" | "clinics";
 
@@ -76,16 +82,63 @@ const actionIcons = {
   watch: null,
 } as const;
 
+type SuggestedActivity = {
+  id: string;
+  title: string;
+  venue: string;
+  schedule: string;
+  spots: string;
+  area: string;
+  why?: string;
+};
+
+type Suggestions = {
+  source: "ai" | "curated-demo";
+  activities: SuggestedActivity[];
+};
+
 /** Local-care discovery hub: nearby support, exercise videos, clinics.
  * Segment state lives in AppShell so home's "Open exercise" can deep-link. */
 export function ResourcesTab({
   segment,
   onSegmentChange,
+  latestRisk,
 }: {
   segment: ResourceSegment;
   onSegmentChange: (segment: ResourceSegment) => void;
+  /** Coarse risk band from the latest history entry — the only profile hint sent to the API. */
+  latestRisk?: RiskCategory | null;
 }) {
   const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
+  const [suggestionsFailed, setSuggestionsFailed] = useState(false);
+
+  // Fetch AI/curated activity suggestions when the Nearby segment is open.
+  useEffect(() => {
+    if (segment !== "nearby" || suggestions || suggestionsFailed) return;
+    let cancelled = false;
+    const params = new URLSearchParams({ area: demoPerson.location });
+    if (latestRisk) params.set("risk", latestRisk);
+    fetch(`/api/recommend-activities?${params.toString()}`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (cancelled) return;
+        if (payload && Array.isArray(payload.activities)) {
+          setSuggestions({
+            source: payload.source === "ai" ? "ai" : "curated-demo",
+            activities: payload.activities,
+          });
+        } else {
+          setSuggestionsFailed(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestionsFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [segment, suggestions, suggestionsFailed, latestRisk]);
 
   const visible = cards.filter(
     (card) =>
@@ -128,6 +181,44 @@ export function ResourcesTab({
             </button>
           ))}
         </div>
+
+        {/* Suggested for you — AI-ranked when OPENAI_API_KEY is configured */}
+        {segment === "nearby" && suggestions && suggestions.activities.length > 0 && (
+          <section className="grid grid-cols-1 gap-2">
+            <h2 className="flex items-center gap-2 px-1 text-[length:var(--text-body)] font-bold">
+              <Sparkles aria-hidden className="text-[var(--accent-warm)]" size={18} />
+              Suggested for you
+              <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-2.5 py-1 text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
+                {suggestions.source === "ai" ? "AI-suggested" : "Curated"}
+              </span>
+            </h2>
+            {suggestions.activities.map((activity) => (
+              <article className="app-card grid gap-1" key={activity.id}>
+                <h3 className="text-[length:var(--text-body)] font-bold">
+                  {activity.title}
+                </h3>
+                <p className="flex flex-wrap items-center gap-x-2 text-[length:var(--text-label)] text-[var(--muted)]">
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin aria-hidden size={14} />
+                    {activity.venue}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <CalendarDays aria-hidden size={14} />
+                    {activity.schedule}
+                  </span>
+                </p>
+                {activity.why && (
+                  <p className="text-[length:var(--text-label)] text-[var(--muted-strong)]">
+                    {activity.why}
+                  </p>
+                )}
+              </article>
+            ))}
+            <p className="px-1 text-[length:var(--text-caption)] text-[var(--muted)]">
+              Suggestions are decision support only, not medical advice.
+            </p>
+          </section>
+        )}
 
         {visible.map((card) => (
           <article className="app-card grid gap-3" key={card.id}>
@@ -173,6 +264,24 @@ export function ResourcesTab({
             No matches here yet. Try a different word or segment.
           </p>
         )}
+
+        {/* Planner view — clearly labelled, opens the standalone route */}
+        <section className="quiet-card flex items-center gap-3 p-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--muted-strong)]">
+            <BarChart3 aria-hidden size={22} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[length:var(--text-body)] font-bold">
+              Population insights (demo)
+            </h2>
+            <p className="text-[length:var(--text-label)] text-[var(--muted)]">
+              For planners: neighbourhood screening trends.
+            </p>
+          </div>
+          <Link className="link-action shrink-0" href="/insights">
+            Open
+          </Link>
+        </section>
       </div>
     </>
   );

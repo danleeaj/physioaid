@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, TrendingUp } from "lucide-react";
+import { ChevronRight, FlaskConical, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import type { HistoryEntry } from "@/components/dashboard/demo-display-data";
 import { shellCopy } from "@/components/layout/copy";
@@ -47,9 +47,13 @@ export function HistoryScreen({
             <TrendingUp aria-hidden size={22} />
           </span>
           <div>
-            <p className="font-bold">{entries.length} checks in 8 weeks</p>
+            <p className="font-bold">
+              {entries.length} {entries.length === 1 ? "check" : "checks"} recorded
+            </p>
             <p className="text-[length:var(--text-label)] text-[var(--muted)]">
-              Confidence improving · Gait support unchanged
+              {entries.some((entry) => entry.sample)
+                ? shellCopy.history.sampleTrend
+                : "Confidence and support levels over time"}
             </p>
           </div>
         </section>
@@ -72,10 +76,19 @@ export function HistoryScreen({
         </div>
 
         {/* Timeline */}
+        {entries.length === 0 && (
+          <p className="app-card text-[var(--muted)]">{shellCopy.history.empty}</p>
+        )}
         {entries.map((entry) => (
           <article className="app-card grid gap-3" key={entry.id}>
-            <p className="text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
+            <p className="flex items-center gap-2 text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
               {entry.dateLabel}
+              {entry.sample && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-2 py-0.5">
+                  <FlaskConical aria-hidden size={12} />
+                  {shellCopy.history.samplePill}
+                </span>
+              )}
             </p>
             <p className="text-[length:var(--text-body)] font-bold">{entry.overall}</p>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-[length:var(--text-label)]">

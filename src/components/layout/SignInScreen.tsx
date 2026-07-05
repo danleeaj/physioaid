@@ -1,16 +1,29 @@
 "use client";
 
-import { HeartHandshake, Mail, Smartphone, UserRound } from "lucide-react";
+import { HeartHandshake, LogIn, Mail, Smartphone, UserRound } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { shellCopy } from "@/components/layout/copy";
 import { PRODUCT_NAME } from "@/config/clinical-config";
 
 const copy = shellCopy.signIn;
 
+// Build-time inlined: true when Firebase env config is present. When it is
+// missing, Google sign-in cannot work, so it joins the coming-soon group.
+const firebaseConfigured = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
+
+function ComingSoonPill() {
+  return (
+    <span className="ml-auto shrink-0 rounded-full bg-[var(--surface-muted)] px-2.5 py-1 text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
+      {copy.comingSoon}
+    </span>
+  );
+}
+
 /**
- * Signed-out entry screen. Only "Continue with Mr Tan demo" is live in this
- * pass — mobile/email sign-in are polished stubs (real Firebase auth stays
- * wired elsewhere and untouched).
+ * Signed-out entry screen. Live actions: "Continue with Google" (existing
+ * Firebase auth via AuthProvider) and "Continue with Mr Tan demo". Mobile and
+ * email sign-in are honest coming-soon stubs.
  */
 export function SignInScreen({
   onDemo,
@@ -19,7 +32,28 @@ export function SignInScreen({
   onDemo: () => void;
   onCarePartner: () => void;
 }) {
+  const { signInWithGoogle } = useAuth();
   const [stubNote, setStubNote] = useState(false);
+  const [googlePending, setGooglePending] = useState(false);
+  const [googleError, setGoogleError] = useState(false);
+
+  async function handleGoogle() {
+    if (!firebaseConfigured) {
+      setStubNote(true);
+      return;
+    }
+    setGoogleError(false);
+    setGooglePending(true);
+    try {
+      await signInWithGoogle();
+      // Success needs no navigation here — onAuthStateChanged flips
+      // useAuth().user and AppShell renders the signed-in app.
+    } catch {
+      setGoogleError(true);
+    } finally {
+      setGooglePending(false);
+    }
+  }
 
   return (
     <div className="app-content min-h-dvh justify-center pb-[calc(20px+env(safe-area-inset-bottom))] pt-10">
@@ -39,13 +73,44 @@ export function SignInScreen({
         </span>
       </div>
 
-      <button className="primary-action w-full" onClick={() => setStubNote(true)} type="button">
+      <button
+        className="primary-action w-full"
+        disabled={googlePending}
+        onClick={handleGoogle}
+        type="button"
+      >
+        <LogIn aria-hidden size={22} />
+        {googlePending ? copy.signingIn : copy.continueGoogle}
+        {!firebaseConfigured && <ComingSoonPill />}
+      </button>
+
+      {googleError && (
+        <p
+          aria-live="assertive"
+          className="text-center text-[length:var(--text-label)] text-[var(--danger)]"
+          role="alert"
+        >
+          {copy.googleError}
+        </p>
+      )}
+
+      <button
+        className="secondary-action w-full"
+        onClick={() => setStubNote(true)}
+        type="button"
+      >
         <Smartphone aria-hidden size={22} />
         {copy.continueMobile}
+        <ComingSoonPill />
       </button>
-      <button className="secondary-action w-full" onClick={() => setStubNote(true)} type="button">
+      <button
+        className="secondary-action w-full"
+        onClick={() => setStubNote(true)}
+        type="button"
+      >
         <Mail aria-hidden size={22} />
         {copy.continueEmail}
+        <ComingSoonPill />
       </button>
       <button className="secondary-action w-full" onClick={onCarePartner} type="button">
         <HeartHandshake aria-hidden size={22} />

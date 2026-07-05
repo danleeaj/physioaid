@@ -55,12 +55,14 @@ const riskIcons = {
  */
 export function AssessmentResultScreen({
   flow,
+  demoMode = false,
   onSaveToHistory,
   onViewResources,
   onBackToAssessment,
 }: {
   flow: AssessmentFlow;
-  onSaveToHistory: () => void;
+  demoMode?: boolean;
+  onSaveToHistory: (session: AssessmentSession) => void;
   onViewResources: () => void;
   onBackToAssessment: () => void;
 }) {
@@ -124,18 +126,16 @@ export function AssessmentResultScreen({
 
   function handleSave() {
     if (saved) return;
+    const session = buildSession();
     if (user) {
-      saveAssessment(user.uid, buildSession()).catch(() => {});
+      saveAssessment(user.uid, session).catch(() => {});
     }
     setSaved(true);
-    onSaveToHistory();
+    onSaveToHistory(session);
   }
 
   function openReport() {
     const id = saveSessionForReport(buildSession());
-    if (user) {
-      saveAssessment(user.uid, buildSession()).catch(() => {});
-    }
     router.push(`/report/${id}`);
   }
 
@@ -257,6 +257,13 @@ export function AssessmentResultScreen({
         </section>
       )}
 
+      {demoMode && (
+        <p className="px-1 text-[length:var(--text-label)] text-[var(--muted)]">
+          This is today’s new check. It may differ from the sample history shown
+          in the demo.
+        </p>
+      )}
+
       {/* Actions */}
       <section className="grid gap-3">
         <button className="primary-action w-full" disabled={saved} onClick={handleSave} type="button">
@@ -269,16 +276,17 @@ export function AssessmentResultScreen({
             copy.saveToHistory
           )}
         </button>
+        {/* Clinician handoff — physio / OT / doctor opens the printable report */}
+        <button className="secondary-action w-full" onClick={openReport} type="button">
+          <FileText aria-hidden size={20} />
+          {copy.openReport}
+        </button>
         <button className="secondary-action w-full" onClick={onViewResources} type="button">
           {copy.viewResources}
           <ArrowRight aria-hidden size={20} />
         </button>
         <button className="secondary-action w-full" onClick={onBackToAssessment} type="button">
           {copy.backToAssessment}
-        </button>
-        <button className="link-action justify-self-start" onClick={openReport} type="button">
-          <FileText aria-hidden size={18} />
-          {t("nav.openReport")}
         </button>
       </section>
 

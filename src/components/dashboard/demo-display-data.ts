@@ -1,11 +1,11 @@
-import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
-import type { RiskCategory } from "@/types/assessment";
+import { getMotionGate } from "@/lib/functional-tests/gates";
+import type { AssessmentSession, RiskCategory } from "@/types/assessment";
 
 /**
  * Presentation-layer demo data for the signed-in shell (home dashboard,
  * history journal). This is deliberately static display data — the clinical
  * scoring engine (`analyseAssessment`) is untouched, and any assessment the
- * user actually completes is mapped through `riskLabel`/`toHistoryEntry`
+ * user actually completes is mapped through `riskLabel`/`sessionToHistoryEntry`
  * below so real results and demo cards share one vocabulary.
  */
 
@@ -23,6 +23,8 @@ export type HistoryEntry = {
   chairStandSeconds: number | null;
   gaitLabel: string;
   floorRiseLabel: string;
+  /** True for static Mr Tan sample entries (demo mode only). */
+  sample?: boolean;
 };
 
 /** Participant-facing overall-status vocabulary for the scoring engine's risk category. */
@@ -43,6 +45,7 @@ export const demoHistory: HistoryEntry[] = [
     chairStandSeconds: 12,
     gaitLabel: "Needs support",
     floorRiseLabel: "Skipped for safety",
+    sample: true,
   },
   {
     id: "demo-2026-01-05",
@@ -54,6 +57,7 @@ export const demoHistory: HistoryEntry[] = [
     chairStandSeconds: 15,
     gaitLabel: "Needs support",
     floorRiseLabel: "Skipped for safety",
+    sample: true,
   },
   {
     id: "demo-2025-12-28",
@@ -65,6 +69,7 @@ export const demoHistory: HistoryEntry[] = [
     chairStandSeconds: 14,
     gaitLabel: "Stable with caution",
     floorRiseLabel: "Not tested",
+    sample: true,
   },
 ];
 
@@ -87,32 +92,33 @@ function formatDateLabel(date: Date): string {
   return `${date.getDate()} ${monthLabels[date.getMonth()]} ${date.getFullYear()}`;
 }
 
-function gaitLabelFor(flow: AssessmentFlow): string {
-  return flow.motionGate.canProceed ? "Stable with caution" : "Needs support";
-}
-
-function floorRiseLabelFor(flow: AssessmentFlow): string {
-  const status = flow.floorRising.completionStatus;
-  if (status === "skipped") return "Skipped for safety";
-  if (status === "stopped") return "Stopped for safety";
-  return "Completed";
-}
-
-/** Map a completed guided assessment (real scoring output) into a history entry. */
-export function toHistoryEntry(flow: AssessmentFlow): HistoryEntry {
-  const now = new Date();
+/**
+ * Map a completed assessment session (real scoring output) into a history
+ * entry. Reuses the existing motion gate so "Needs support" matches the
+ * engine's own thresholds.
+ */
+export function sessionToHistoryEntry(session: AssessmentSession): HistoryEntry {
+  const created = new Date(session.createdAt);
+  const gaitOk = session.motion ? getMotionGate(session.motion).canProceed : false;
+  const floorStatus = session.floorRising?.completionStatus;
   return {
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `entry-${now.getTime()}`,
-    dateISO: now.toISOString(),
-    dateLabel: formatDateLabel(now),
-    overall: riskLabel(flow.analytics.riskCategory),
-    riskCategory: flow.analytics.riskCategory,
-    confidence: Number(flow.scoredQuestionnaire.averageScore.toFixed(1)),
-    chairStandSeconds: flow.chairStand.durationSeconds ?? null,
-    gaitLabel: gaitLabelFor(flow),
-    floorRiseLabel: floorRiseLabelFor(flow),
+    id: session.id,
+    dateISO: session.createdAt,
+    dateLabel: formatDateLabel(created),
+    overall: session.analytics
+      ? riskLabel(session.analytics.riskCategory)
+      : "Check recorded",
+    riskCategory: session.analytics?.riskCategory ?? null,
+    confidence: Number(session.questionnaire.averageScore.toFixed(1)),
+    chairStandSeconds: session.chairStand.durationSeconds ?? null,
+    gaitLabel: gaitOk ? "Stable with caution" : "Needs support",
+    floorRiseLabel:
+      floorStatus === "skipped"
+        ? "Skipped for safety"
+        : floorStatus === "stopped"
+          ? "Stopped for safety"
+          : floorStatus
+            ? "Completed"
+            : "Not tested",
   };
 }

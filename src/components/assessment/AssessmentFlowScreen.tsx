@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ChairStandScreen } from "@/components/assessment/screens/ChairStandScreen";
 import { ConsentScreen } from "@/components/assessment/screens/ConsentScreen";
 import { ContactScreen } from "@/components/assessment/screens/ContactScreen";
@@ -12,7 +12,7 @@ import { QuestionnaireScreen } from "@/components/assessment/screens/Questionnai
 import { SafetyScreen } from "@/components/assessment/screens/SafetyScreen";
 import { useAssessmentFlow } from "@/components/assessment/useAssessmentFlow";
 import { AssessmentResultScreen } from "@/components/dashboard/AssessmentResultScreen";
-import { toHistoryEntry, type HistoryEntry } from "@/components/dashboard/demo-display-data";
+import type { AssessmentSession } from "@/types/assessment";
 import { ConfirmDialog } from "@/components/layout/ConfirmDialog";
 import { TopBar } from "@/components/layout/TopBar";
 import { shellCopy } from "@/components/layout/copy";
@@ -33,14 +33,13 @@ export function AssessmentFlowScreen({
 }: {
   demoMode: boolean;
   onExit: () => void;
-  onSaved: (entry: HistoryEntry) => void;
+  onSaved: (session: AssessmentSession) => void;
   onViewResources: () => void;
 }) {
   const flow = useAssessmentFlow({ initialStep: "consent" });
   const { t } = useLanguage();
   const reducedMotion = useReducedMotion();
   const [confirmExit, setConfirmExit] = useState(false);
-  const demoLoadedRef = useRef(false);
 
   const {
     steps,
@@ -50,19 +49,11 @@ export function AssessmentFlowScreen({
     currentPhysicalPhase,
     isPhysicalDemoScreen,
     blockedBySafety,
+    demoLoaded,
     next,
     back,
     loadDemo,
   } = flow;
-
-  useEffect(() => {
-    if (demoMode && !demoLoadedRef.current) {
-      demoLoadedRef.current = true;
-      loadDemo();
-    }
-    // loadDemo is stable in practice; run once on mount for demo sessions.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [demoMode]);
 
   const isResult = currentStep === "dashboard";
   const firstStepIndex = steps.indexOf("consent");
@@ -100,9 +91,10 @@ export function AssessmentFlowScreen({
       <>
         <TopBar backLabel={t("nav.back")} onBack={onExit} title={shellCopy.result.title} />
         <AssessmentResultScreen
+          demoMode={demoMode}
           flow={flow}
           onBackToAssessment={onExit}
-          onSaveToHistory={() => onSaved(toHistoryEntry(flow))}
+          onSaveToHistory={onSaved}
           onViewResources={onViewResources}
         />
       </>
@@ -113,7 +105,13 @@ export function AssessmentFlowScreen({
     <div className="flex min-h-dvh flex-col">
       <TopBar
         backLabel={t("nav.back")}
-        onBack={requestExit}
+        onBack={handleBack}
+        right={
+          <button className="link-action shrink-0" onClick={requestExit} type="button">
+            <X aria-hidden size={18} />
+            {shellCopy.flow.exit}
+          </button>
+        }
         title={t("progress.step", { current: stepIndex, total: totalProgressSteps })}
       />
       {/* Thin progress strip per the mobile flow contract */}
@@ -135,6 +133,23 @@ export function AssessmentFlowScreen({
       </div>
 
       <div className="app-content flex-1">
+        {/* Sample answers are opt-in — a new assessment always starts fresh */}
+        {demoMode && currentStep === "consent" && (
+          <div>
+            {demoLoaded ? (
+              <p
+                aria-live="polite"
+                className="text-[length:var(--text-label)] text-[var(--muted-strong)]"
+              >
+                {shellCopy.flow.sampleLoaded}
+              </p>
+            ) : (
+              <button className="link-action" onClick={loadDemo} type="button">
+                {shellCopy.flow.loadSample}
+              </button>
+            )}
+          </div>
+        )}
         <AnimatePresence initial={false} mode="wait">
           <motion.div
             animate={reducedMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
