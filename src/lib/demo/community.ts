@@ -20,6 +20,8 @@ export type CommunityActivity = {
   venue: string;
   schedule: string;
   spots: string;
+  /** Planning area used for "near you" ranking. */
+  area: string;
 };
 
 export type TrainerClip = {
@@ -82,6 +84,7 @@ export const communityActivities: CommunityActivity[] = [
     venue: "Bedok Active Ageing Centre",
     schedule: "Tue & Thu · 8.00am",
     spots: "6 spots left",
+    area: "Bedok",
   },
   {
     id: "activity-2",
@@ -89,6 +92,7 @@ export const communityActivities: CommunityActivity[] = [
     venue: "Tampines Park Connector",
     schedule: "Mon, Wed, Fri · 7.30am",
     spots: "Open group",
+    area: "Tampines",
   },
   {
     id: "activity-3",
@@ -96,6 +100,31 @@ export const communityActivities: CommunityActivity[] = [
     venue: "Ang Mo Kio Community Health Post",
     schedule: "Sat · 9.00am",
     spots: "4 spots left",
+    area: "Ang Mo Kio",
+  },
+  {
+    id: "activity-4",
+    title: "Chair exercise circle",
+    venue: "Toa Payoh Active Ageing Centre",
+    schedule: "Wed · 9.30am",
+    spots: "8 spots left",
+    area: "Toa Payoh",
+  },
+  {
+    id: "activity-5",
+    title: "Qigong in the park",
+    venue: "Yishun Pond Park",
+    schedule: "Daily · 7.00am",
+    spots: "Open group",
+    area: "Yishun",
+  },
+  {
+    id: "activity-6",
+    title: "Gentle strength for beginners",
+    venue: "Woodlands Community Health Post",
+    schedule: "Fri · 10.00am",
+    spots: "5 spots left",
+    area: "Woodlands",
   },
 ];
 

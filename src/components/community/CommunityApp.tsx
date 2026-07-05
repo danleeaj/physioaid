@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowLeft, Flame, Footprints, HandHeart } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Flame, Footprints, HandHeart } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LangSwitch } from "@/components/i18n/LangSwitch";
 import { ListenButton } from "@/components/i18n/ListenButton";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
@@ -11,7 +11,16 @@ import {
   communityPosts,
   trainerClips,
   weeklySummary,
+  type CommunityActivity,
 } from "@/lib/demo/community";
+import { loadChosenArea } from "@/lib/planning-areas";
+import {
+  activeDaysThisWeek,
+  computeStreak,
+  loadPracticeLog,
+  markPracticedToday,
+  practisedToday,
+} from "@/lib/streak";
 import { PRODUCT_NAME } from "@/config/clinical-config";
 
 function CheerButton({ initialCheers }: { initialCheers: number }) {
@@ -52,8 +61,43 @@ function JoinPill() {
 
 export function CommunityApp() {
   const { t } = useLanguage();
+  const [log, setLog] = useState<string[]>([]);
+  const [area, setArea] = useState<string | undefined>();
+  const [activities, setActivities] = useState<CommunityActivity[]>(
+    communityActivities.slice(0, 4),
+  );
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time post-hydration load from localStorage
+    setLog(loadPracticeLog());
+    const chosenArea = loadChosenArea();
+    setArea(chosenArea);
+    const query = chosenArea
+      ? `?area=${encodeURIComponent(chosenArea)}`
+      : "";
+    fetch(`/api/recommend-activities${query}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (Array.isArray(data.activities)) {
+          setActivities(data.activities);
+        }
+      })
+      .catch(() => {
+        // offline / route unavailable — keep the local dataset
+      });
+  }, []);
+
+  // Real practice log takes over from the demo numbers once it exists.
+  const hasLog = log.length > 0;
+  const activeDays = hasLog ? activeDaysThisWeek(log) : weeklySummary.activeDays;
+  const streakDays = hasLog
+    ? computeStreak(log)
+    : weeklySummary.chairStandStreakDays;
+  const doneToday = practisedToday(log);
   const activityScore = Math.round(
-    (weeklySummary.activeDays / weeklySummary.targetDays) * 100,
+    (Math.min(activeDays, weeklySummary.targetDays) /
+      weeklySummary.targetDays) *
+      100,
   );
 
   return (
@@ -126,7 +170,7 @@ export function CommunityApp() {
                 >
                   <div>
                     <p className="text-3xl font-bold leading-none">
-                      {weeklySummary.activeDays}
+                      {activeDays}
                       <span className="text-lg text-[var(--muted)]">
                         /{weeklySummary.targetDays}
                       </span>
@@ -135,17 +179,27 @@ export function CommunityApp() {
                 </div>
                 <p className="font-semibold text-[var(--muted-strong)]">
                   {t("community.activeDays", {
-                    count: weeklySummary.activeDays,
+                    count: activeDays,
                     total: weeklySummary.targetDays,
                   })}
                 </p>
               </div>
+              <button
+                aria-pressed={doneToday}
+                className={doneToday ? "secondary-action" : "primary-action"}
+                disabled={doneToday}
+                onClick={() => setLog(markPracticedToday())}
+                type="button"
+              >
+                <CheckCircle2 aria-hidden size={20} />
+                {doneToday
+                  ? t("community.practisedDone")
+                  : t("community.practised")}
+              </button>
               <div className="grid grid-cols-3 gap-3">
                 <div className="stat-tile stat-tile--accent">
                   <Flame aria-hidden className="mx-auto" size={20} />
-                  <p className="mt-1 text-xl font-bold">
-                    {weeklySummary.chairStandStreakDays}
-                  </p>
+                  <p className="mt-1 text-xl font-bold">{streakDays}</p>
                   <p className="text-[length:var(--text-caption)]">day streak</p>
                 </div>
                 <div className="stat-tile">
@@ -172,14 +226,26 @@ export function CommunityApp() {
             <section className="grid gap-3">
               <h2 className="text-[length:var(--text-lead)] font-semibold">
                 {t("community.activitiesTitle")}
+                {area && (
+                  <span className="ml-2 text-[length:var(--text-label)] font-semibold text-[var(--muted)]">
+                    · {area}
+                  </span>
+                )}
               </h2>
-              {communityActivities.map((activity) => (
+              {activities.map((activity) => (
                 <div
                   className="quiet-card flex items-center justify-between gap-3 p-4"
                   key={activity.id}
                 >
                   <div className="min-w-0">
-                    <p className="font-bold">{activity.title}</p>
+                    <p className="font-bold">
+                      {activity.title}
+                      {area && activity.area === area && (
+                        <span className="status-pill status-pill--ready ml-2 align-middle text-[length:var(--text-caption)]">
+                          {t("community.nearYou")}
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[length:var(--text-label)] text-[var(--muted)]">
                       {activity.venue} · {activity.schedule}
                     </p>
