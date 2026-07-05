@@ -10,6 +10,7 @@ export const careLinkageOptions = [
     title: "Community Health Post",
     description:
       "Consider review or care navigation if functional concerns are present.",
+    url: "https://www.singhealth.com.sg/community-care/connect-with-our-place-based-care-team/find-a-community-health-posts",
   },
   {
     id: "physiotherapy_clinic",
