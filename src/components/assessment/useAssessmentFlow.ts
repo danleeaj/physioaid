@@ -49,8 +49,13 @@ export type PhysicalTestPhase = "demo" | "start" | "manual";
 
 const lastQuestionIndex = fallsEfficacyQuestions.length - 1;
 
-export function useAssessmentFlow() {
-  const [stepIndex, setStepIndex] = useState(0);
+export function useAssessmentFlow(options?: { initialStep?: AssessmentStep }) {
+  const [stepIndex, setStepIndex] = useState(() => {
+    const initialIndex = options?.initialStep
+      ? steps.indexOf(options.initialStep)
+      : 0;
+    return initialIndex >= 0 ? initialIndex : 0;
+  });
   const [questionIndex, setQuestionIndex] = useState(0);
   const [demoLoaded, setDemoLoaded] = useState(false);
   const [chairStandPhase, setChairStandPhase] =
