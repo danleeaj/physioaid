@@ -125,7 +125,11 @@ function HubRow({
         </p>
       </div>
       {actionLabel && onAction && (
-        <button className="secondary-action shrink-0" onClick={onAction} type="button">
+        <button
+          className="secondary-action !w-auto shrink-0"
+          onClick={onAction}
+          type="button"
+        >
           {actionLabel}
         </button>
       )}
