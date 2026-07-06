@@ -30,6 +30,7 @@ import {
   getMotionGate,
 } from "@/lib/functional-tests/gates";
 import { scoreFallsEfficacy } from "@/lib/questionnaire";
+import { summarizeMotionSamples } from "@/lib/sensors/motion-summary";
 import type {
   ChairStandMetrics,
   ConsentRecord,
@@ -38,6 +39,7 @@ import type {
   SafetyScreenResult,
   TestId,
 } from "@/types/assessment";
+import type { MotionSample } from "@/types/motion";
 
 // Re-exported for compat — QuestionnaireScreen imports the type from here.
 export type { QuestionnaireDraft };
@@ -416,7 +418,23 @@ export function useAssessmentFlow(options: {
     returnToHub();
   }
 
-  function startGaitCountdown() {
+  /**
+   * Fires when the guided walk finishes. Uses the real devicemotion samples
+   * captured during the run when the browser exposed them; falls back to a
+   * fixed placeholder on devices/browsers without motion sensor access.
+   */
+  function startGaitCountdown(samples: MotionSample[] = [], elapsedSeconds = 0) {
+    if (samples.length > 0) {
+      setMotion(
+        summarizeMotionSamples({
+          samples,
+          distanceMeters: gaitDistanceMeters,
+          durationSeconds: elapsedSeconds,
+        }),
+      );
+      return;
+    }
+
     setMotion({
       stabilityScore: 0.62,
       rhythmConsistency: 0.58,

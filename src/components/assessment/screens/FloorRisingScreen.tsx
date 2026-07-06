@@ -31,10 +31,6 @@ export function FloorRisingScreen({ flow }: { flow: AssessmentFlow }) {
       <FloorRisingDemo
         onContinue={() => setFloorRisingPhase("start")}
         onSkip={skipFloorRising}
-        onUseDemo={() => {
-          setFloorRising(getDemoFloorRisingMetrics());
-          setFloorRisingPhase("start");
-        }}
       />
     );
   }

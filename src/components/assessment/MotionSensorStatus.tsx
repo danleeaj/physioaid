@@ -1,12 +1,13 @@
 "use client";
 
 import { Smartphone } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getMotionSupportStatus,
   requestMotionPermission,
+  startMotionCapture,
 } from "@/lib/sensors/browser-motion";
-import type { MotionSupportStatus } from "@/types/motion";
+import type { MotionSample, MotionSupportStatus } from "@/types/motion";
 
 export function MotionSensorStatus({
   onStatusChange,
@@ -17,14 +18,36 @@ export function MotionSensorStatus({
   const [status, setStatus] = useState<MotionSupportStatus>(() =>
     getMotionSupportStatus(),
   );
+  const [listening, setListening] = useState(false);
+  const [sampleCount, setSampleCount] = useState(0);
+  const [lastSample, setLastSample] = useState<MotionSample>();
+  const stopCaptureRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     onStatusChange?.(status);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- notify on status change only
   }, [status]);
 
+  useEffect(() => () => stopCaptureRef.current(), []);
+
   async function handleRequestPermission() {
     setStatus(await requestMotionPermission());
+  }
+
+  function toggleLiveTest() {
+    if (listening) {
+      stopCaptureRef.current();
+      setListening(false);
+      return;
+    }
+
+    setSampleCount(0);
+    setLastSample(undefined);
+    stopCaptureRef.current = startMotionCapture((sample) => {
+      setSampleCount((count) => count + 1);
+      setLastSample(sample);
+    });
+    setListening(true);
   }
 
   return (
@@ -49,6 +72,37 @@ export function MotionSensorStatus({
             >
               Check motion permission
             </button>
+          )}
+          {status.supported && (
+            <>
+              <button
+                className="secondary-action w-fit"
+                onClick={toggleLiveTest}
+                type="button"
+              >
+                {listening ? "Stop live sensor test" : "Test live motion sensor"}
+              </button>
+              {listening && (
+                <div
+                  aria-live="polite"
+                  className="rounded-[var(--radius-card)] bg-[var(--surface-muted)] p-3 text-sm"
+                >
+                  <p>Samples received: {sampleCount}</p>
+                  {lastSample ? (
+                    <p className="tabular-nums">
+                      x: {lastSample.accelerationX.toFixed(2)} · y:{" "}
+                      {lastSample.accelerationY.toFixed(2)} · z:{" "}
+                      {lastSample.accelerationZ.toFixed(2)}
+                    </p>
+                  ) : (
+                    <p>
+                      Waiting for the first sample — move the phone if
+                      nothing appears within a couple seconds.
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
