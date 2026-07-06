@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { useMovementLog } from "@/components/community/useMovementLog";
 import type { HistorySession } from "@/components/dashboard/history-store";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { shellCopy } from "@/components/layout/copy";
 import {
   feedItems,
@@ -13,14 +14,7 @@ import {
 } from "@/lib/demo/community-feed";
 import type { MovementActivityLog } from "@/types/movement";
 
-const copy = shellCopy.community;
-
 const WEEKLY_GOAL_DAYS = 3;
-const WALK_DURATION_OPTIONS = [
-  { minutes: 10, label: copy.walkDuration10 },
-  { minutes: 20, label: copy.walkDuration20 },
-  { minutes: 30, label: copy.walkDuration30 },
-] as const;
 
 function daysLeftThisWeek(): number {
   // Monday-based week to match getActiveDaysThisWeek in lib/movement-log.
@@ -52,6 +46,8 @@ function weekdayLabel(iso: string): string {
 
 /** Sample pill shown on demo feed cards (pattern from AssessmentHome.tsx). */
 function SamplePill() {
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].community;
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-2 py-0.5 normal-case">
       <FlaskConical aria-hidden size={12} />
@@ -63,6 +59,13 @@ function SamplePill() {
 /** Gentle neighbourhood community feed for older adults — encouragement, not competition. */
 export function CommunityTab() {
   const { isDemo, profile, uid, updateProfile } = useUserProfile();
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].community;
+  const WALK_DURATION_OPTIONS = [
+    { minutes: 10, label: copy.walkDuration10 },
+    { minutes: 20, label: copy.walkDuration20 },
+    { minutes: 30, label: copy.walkDuration30 },
+  ] as const;
   const [kudos, setKudos] = useState<Record<string, boolean>>({});
   const [segment, setSegment] = useState<FeedSegment>("nearby");
   const [loggingWalk, setLoggingWalk] = useState(false);

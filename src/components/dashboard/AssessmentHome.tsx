@@ -12,9 +12,8 @@ import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { shellCopy } from "@/components/layout/copy";
 import type { HistoryEntry } from "@/components/dashboard/demo-display-data";
 import { TrendSection } from "@/components/dashboard/TrendSection";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import type { AssessmentSession } from "@/types/assessment";
-
-const copy = shellCopy.home;
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -43,6 +42,8 @@ export function AssessmentHome({
   onOpenProfile: () => void;
 }) {
   const { profile } = useUserProfile();
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].home;
   const lastResult = entries[0];
   const preview = entries.slice(0, 3);
   // Neutral greeting when the profile has no name yet — never a demo persona.

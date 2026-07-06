@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUserProfile } from "@/components/auth/UserProfileProvider";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { shellCopy } from "@/components/layout/copy";
 import type { RiskCategory } from "@/types/assessment";
 
@@ -110,6 +111,7 @@ export function ResourcesTab({
   latestRisk?: RiskCategory | null;
 }) {
   const { isDemo, profile } = useUserProfile();
+  const { lang } = useLanguage();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
   const [suggestionsFailed, setSuggestionsFailed] = useState(false);
@@ -156,11 +158,11 @@ export function ResourcesTab({
   return (
     <>
       <header className="top-bar">
-        <h1 className="top-bar__title">{shellCopy.resources.title}</h1>
+        <h1 className="top-bar__title">{shellCopy[lang].resources.title}</h1>
       </header>
       <div className="app-content app-content--tabs">
         <label className="relative block">
-          <span className="sr-only">{shellCopy.resources.searchPlaceholder}</span>
+          <span className="sr-only">{shellCopy[lang].resources.searchPlaceholder}</span>
           <Search
             aria-hidden
             className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]"
@@ -169,7 +171,7 @@ export function ResourcesTab({
           <input
             className="input-field pl-12"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={shellCopy.resources.searchPlaceholder}
+            placeholder={shellCopy[lang].resources.searchPlaceholder}
             type="search"
             value={query}
           />

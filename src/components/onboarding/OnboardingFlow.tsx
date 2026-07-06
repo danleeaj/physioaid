@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useUserProfile } from "@/components/auth/UserProfileProvider";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { shellCopy } from "@/components/layout/copy";
 import { AboutYouStep } from "@/components/onboarding/steps/AboutYouStep";
 import { ConsentStep } from "@/components/onboarding/steps/ConsentStep";
@@ -9,8 +10,6 @@ import { ReadyStep } from "@/components/onboarding/steps/ReadyStep";
 import { SupportContactStep } from "@/components/onboarding/steps/SupportContactStep";
 import { WelcomeStep } from "@/components/onboarding/steps/WelcomeStep";
 import type { UserProfile } from "@/types/profile";
-
-const copy = shellCopy.onboarding;
 
 const STEPS = [
   "welcome",
@@ -33,6 +32,8 @@ export type OnboardingStep = (typeof STEPS)[number];
  */
 export function OnboardingFlow() {
   const { profile, updateProfile } = useUserProfile();
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].onboarding;
   const [stepIndex, setStepIndex] = useState(() => {
     const last = profile?.onboarding.lastCompletedStep ?? null;
     const resumeAt = last ? STEPS.indexOf(last) + 1 : 0;

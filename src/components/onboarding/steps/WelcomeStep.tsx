@@ -1,12 +1,13 @@
 "use client";
 
 import { HeartHandshake } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { shellCopy } from "@/components/layout/copy";
-
-const copy = shellCopy.onboarding;
 
 /** First onboarding step — orientation copy only, no data collected. */
 export function WelcomeStep({ onContinue }: { onContinue: () => void }) {
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].onboarding;
   return (
     <section className="grid gap-4">
       <h1 className="text-[length:var(--text-display)] font-bold">

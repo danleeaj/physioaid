@@ -4,11 +4,12 @@ import { HeartHandshake } from "lucide-react";
 import { useState } from "react";
 import { shellCopy } from "@/components/layout/copy";
 import { TopBar } from "@/components/layout/TopBar";
-
-const copy = shellCopy.carePartner;
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 /** Care partner access — polished placeholder, no account system yet. */
 export function CarePartnerScreen({ onBack }: { onBack: () => void }) {
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].carePartner;
   const [code, setCode] = useState("");
   const [submitted, setSubmitted] = useState(false);
 

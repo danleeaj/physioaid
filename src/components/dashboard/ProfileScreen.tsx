@@ -13,14 +13,9 @@ import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { shellCopy } from "@/components/layout/copy";
 import { TopBar } from "@/components/layout/TopBar";
 import { LangSwitch } from "@/components/i18n/LangSwitch";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { loadStoredTextSize } from "@/lib/preferences";
 import type { TextSize } from "@/types/profile";
-
-const textSizes: { id: TextSize; label: string }[] = [
-  { id: "standard", label: "Standard" },
-  { id: "large", label: "Large" },
-  { id: "xl", label: "Extra large" },
-];
 
 /** Profile secondary screen — session identity, display settings, sign out. */
 export function ProfileScreen({
@@ -35,10 +30,18 @@ export function ProfileScreen({
   onSignOut: () => void;
 }) {
   const { profile, setTextSize: applyProfileTextSize } = useUserProfile();
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].profile;
   const [textSize, setTextSize] = useState<TextSize>(
     () => profile?.textSize ?? loadStoredTextSize(),
   );
   const [reminders, setReminders] = useState(true);
+
+  const textSizes: { id: TextSize; label: string }[] = [
+    { id: "standard", label: copy.textSizeOptions.standard },
+    { id: "large", label: copy.textSizeOptions.large },
+    { id: "xl", label: copy.textSizeOptions.xl },
+  ];
 
   function selectTextSize(size: TextSize) {
     setTextSize(size);
@@ -53,13 +56,13 @@ export function ProfileScreen({
     .map((part) => part[0])
     .join("");
   const identityMeta = [
-    profile?.ageGroup ? `Age group: ${profile.ageGroup}` : null,
+    profile?.ageGroup ? copy.ageGroupPrefix(profile.ageGroup) : null,
     profile?.planningArea ?? null,
   ].filter((segment): segment is string => segment !== null);
 
   return (
     <>
-      <TopBar onBack={onBack} title={shellCopy.profile.title} />
+      <TopBar onBack={onBack} title={copy.title} />
       <div className="app-content pb-[calc(20px+env(safe-area-inset-bottom))]">
         {/* Identity */}
         <section className="app-card app-card--hero flex items-center gap-3">
@@ -68,7 +71,7 @@ export function ProfileScreen({
           </span>
           <div>
             <p className="text-[length:var(--text-lead)] font-bold">
-              {displayName || "Your profile"}
+              {displayName || copy.yourProfileFallback}
             </p>
             {identityMeta.length > 0 && (
               <p className="text-[length:var(--text-label)] text-[var(--muted)]">
@@ -80,14 +83,14 @@ export function ProfileScreen({
 
         {/* Language */}
         <section className="app-card grid gap-2">
-          <p className="font-bold">Preferred language</p>
+          <p className="font-bold">{copy.languageLabel}</p>
           <LangSwitch />
         </section>
 
         {/* Text size */}
         <section className="app-card grid gap-2">
-          <p className="font-bold">Text size</p>
-          <div className="segmented" role="group" aria-label="Text size">
+          <p className="font-bold">{copy.textSizeLabel}</p>
+          <div className="segmented" role="group" aria-label={copy.textSizeLabel}>
             {textSizes.map((size) => (
               <button
                 aria-pressed={textSize === size.id}
@@ -107,9 +110,9 @@ export function ProfileScreen({
             <HeartHandshake aria-hidden size={22} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block font-bold">Care partner</span>
+            <span className="block font-bold">{copy.carePartnerLabel}</span>
             <span className="block text-[length:var(--text-label)] text-[var(--muted)]">
-              {profile?.supportContact?.name ?? "Not connected"}
+              {profile?.supportContact?.name ?? copy.notConnected}
             </span>
           </span>
           <ChevronRight aria-hidden className="shrink-0 text-[var(--muted)]" size={20} />
@@ -121,9 +124,9 @@ export function ProfileScreen({
             <Bell aria-hidden size={22} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block font-bold">Assessment reminders</span>
+            <span className="block font-bold">{copy.remindersLabel}</span>
             <span className="block text-[length:var(--text-label)] text-[var(--muted)]">
-              {reminders ? "Weekly reminder on" : "Reminders off"}
+              {reminders ? copy.weeklyReminderOn : copy.remindersOff}
             </span>
           </span>
           <button
@@ -132,7 +135,7 @@ export function ProfileScreen({
             onClick={() => setReminders((value) => !value)}
             type="button"
           >
-            {reminders ? "On" : "Off"}
+            {reminders ? copy.on : copy.off}
           </button>
         </div>
 
@@ -141,13 +144,13 @@ export function ProfileScreen({
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--success-soft)] text-[var(--primary-dark)]">
             <ShieldCheck aria-hidden size={22} />
           </span>
-          <span className="min-w-0 flex-1 font-bold">Privacy and consent</span>
+          <span className="min-w-0 flex-1 font-bold">{copy.privacyLabel}</span>
           <ChevronRight aria-hidden className="shrink-0 text-[var(--muted)]" size={20} />
         </button>
 
         <button className="secondary-action w-full" onClick={onSignOut} type="button">
           <LogOut aria-hidden size={20} />
-          {shellCopy.profile.signOut}
+          {copy.signOut}
         </button>
       </div>
     </>

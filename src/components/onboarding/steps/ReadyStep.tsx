@@ -1,10 +1,9 @@
 "use client";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { shellCopy } from "@/components/layout/copy";
 import { AGE_GROUP_OPTIONS } from "@/components/onboarding/steps/AboutYouStep";
 import type { UserProfile } from "@/types/profile";
-
-const copy = shellCopy.onboarding;
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -27,6 +26,8 @@ export function ReadyStep({
   onBack: () => void;
   onStart: () => void;
 }) {
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].onboarding;
   const ageLabel = AGE_GROUP_OPTIONS.find(
     (option) => option.id === profile?.ageGroup,
   )?.label;

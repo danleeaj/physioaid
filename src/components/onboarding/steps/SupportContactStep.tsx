@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { TextField } from "@/components/assessment/ui/Fields";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { shellCopy } from "@/components/layout/copy";
 import type { SupportContact, UserProfile } from "@/types/profile";
-
-const copy = shellCopy.onboarding;
 
 /**
  * Optional care-partner contact. "Skip for now" is a first-class choice and
@@ -20,6 +19,8 @@ export function SupportContactStep({
   onBack: () => void;
   onContinue: (contact: SupportContact | null) => void;
 }) {
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].onboarding;
   const [name, setName] = useState(profile?.supportContact?.name ?? "");
   const [phone, setPhone] = useState(profile?.supportContact?.phone ?? "");
   const [relationship, setRelationship] = useState(

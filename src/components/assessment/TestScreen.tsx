@@ -27,8 +27,8 @@ export function TestScreen({
   testId: TestId;
   onBack: () => void;
 }) {
-  const { t } = useLanguage();
-  const title = shellCopy.hub.tests[testId];
+  const { t, lang } = useLanguage();
+  const title = shellCopy[lang].hub.tests[testId];
 
   if (testId === "self_confidence") {
     return (
@@ -94,7 +94,7 @@ export function TestScreen({
               onClick={onBack}
               type="button"
             >
-              {shellCopy.test.pause}
+              {shellCopy[lang].test.pause}
             </button>
             <button
               className="primary-action w-full flex-1"
@@ -102,7 +102,7 @@ export function TestScreen({
               type="button"
             >
               <Check aria-hidden size={22} />
-              {nextTestId ? shellCopy.test.continueToNext : shellCopy.test.doneBackToHub}
+              {nextTestId ? shellCopy[lang].test.continueToNext : shellCopy[lang].test.doneBackToHub}
             </button>
           </div>
         </footer>

@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { shellCopy } from "@/components/layout/copy";
 import type { ProfileConsents, UserProfile } from "@/types/profile";
-
-const copy = shellCopy.onboarding;
 
 function ConsentToggle({
   label,
@@ -17,6 +16,8 @@ function ConsentToggle({
   value: boolean;
   onToggle: () => void;
 }) {
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].onboarding;
   return (
     <div className="app-card flex items-center gap-3">
       <span className="min-w-0 flex-1">
@@ -51,6 +52,8 @@ export function ConsentStep({
   onBack: () => void;
   onContinue: (consents: ProfileConsents) => void;
 }) {
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].onboarding;
   const [assessmentConsent, setAssessmentConsent] = useState(
     profile?.consents.assessmentConsent ?? false,
   );

@@ -46,7 +46,7 @@ export function AssessmentFlowScreen({
       log.source === "exercise" && toLocalDateKey(log.completedAt) === todayKey,
   );
   const flow = useAssessmentFlow({ identity, demoMode, exerciseDoneToday });
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   if (flow.view === "result") {
     return (
@@ -54,7 +54,7 @@ export function AssessmentFlowScreen({
         <TopBar
           backLabel={t("nav.back")}
           onBack={flow.returnToHub}
-          title={shellCopy.result.title}
+          title={shellCopy[lang].result.title}
         />
         <AssessmentResultScreen
           demoMode={demoMode}
@@ -113,8 +113,8 @@ function ExerciseScreen({
   onMarkDone: () => void;
   onViewResources: () => void;
 }) {
-  const { t } = useLanguage();
-  const copy = shellCopy.hub;
+  const { t, lang } = useLanguage();
+  const copy = shellCopy[lang].hub;
 
   return (
     <div className="flex min-h-dvh flex-col">

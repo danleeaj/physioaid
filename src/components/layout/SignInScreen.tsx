@@ -3,16 +3,17 @@
 import { HeartHandshake, LogIn, Mail, Smartphone, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { shellCopy } from "@/components/layout/copy";
 import { PRODUCT_NAME } from "@/config/clinical-config";
-
-const copy = shellCopy.signIn;
 
 // Build-time inlined: true when Firebase env config is present. When it is
 // missing, Google sign-in cannot work, so it joins the coming-soon group.
 const firebaseConfigured = Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
 
 function ComingSoonPill() {
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].signIn;
   return (
     <span className="ml-auto shrink-0 rounded-full bg-[var(--surface-muted)] px-2.5 py-1 text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
       {copy.comingSoon}
@@ -33,6 +34,8 @@ export function SignInScreen({
   onCarePartner: () => void;
 }) {
   const { signInWithGoogle } = useAuth();
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].signIn;
   const [stubNote, setStubNote] = useState(false);
   const [googlePending, setGooglePending] = useState(false);
   const [googleError, setGoogleError] = useState(false);

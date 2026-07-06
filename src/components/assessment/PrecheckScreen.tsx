@@ -10,8 +10,6 @@ import { TopBar } from "@/components/layout/TopBar";
 import { shellCopy } from "@/components/layout/copy";
 import { createDefaultSafetyResult } from "@/lib/assessment/session-draft";
 
-const copy = shellCopy.precheck;
-
 type PrecheckStep = "consent" | "safety";
 
 /**
@@ -28,7 +26,8 @@ export function PrecheckScreen({
   flow: AssessmentFlow;
   onClose: () => void;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const copy = shellCopy[lang].precheck;
   // Resume at the safety questions when consent is already given.
   const [step, setStep] = useState<PrecheckStep>(() =>
     flow.consent.assessmentConsent && flow.safety === null
