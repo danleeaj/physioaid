@@ -8,7 +8,10 @@ import { FormGrid, TextField } from "@/components/assessment/ui/Fields";
 import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
-import { summarizeChairStandSamples } from "@/lib/sensors/chair-stand-detection";
+import {
+  calibrateFromSamples,
+  summarizeChairStandSamples,
+} from "@/lib/sensors/chair-stand-detection";
 import { getDemoChairStandMetrics } from "@/lib/vision/chair-stand";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
 import type { MotionSupportStatus } from "@/types/motion";
@@ -35,6 +38,7 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
     return (
       <TestStartPanel
         autoCompleteSeconds={30}
+        calibrationSeconds={10}
         countdownCueWord="begin"
         fallbackActions={[
           {
@@ -47,9 +51,16 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
           },
         ]}
         guidedPocketMode
-        onPrimary={(samples, elapsedSeconds) => {
+        onPrimary={(samples, elapsedSeconds, calibrationSamples) => {
+          const calibration = calibrationSamples
+            ? calibrateFromSamples(calibrationSamples)
+            : null;
           setChairStand(
-            summarizeChairStandSamples({ samples, durationSeconds: elapsedSeconds }),
+            summarizeChairStandSamples({
+              samples,
+              durationSeconds: elapsedSeconds,
+              calibration,
+            }),
           );
           setMotionSampleCount(samples.length);
         }}

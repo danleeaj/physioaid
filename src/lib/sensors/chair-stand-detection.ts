@@ -2,23 +2,76 @@ import { getGuidedChairStandMetrics } from "@/lib/vision/chair-stand";
 import type { ChairStandMetrics } from "@/types/assessment";
 import type { MotionSample } from "@/types/motion";
 
-// Deviation (m/s^2) from the rolling baseline that counts as a rep-phase
-// peak — the push-off/rising burst or the sitting-back-down impact. A
-// sit-to-stand transition moves the whole body (and phone) far more
-// abruptly than a footstep, so this sits well above the gait step
-// detector's threshold. Not yet calibrated against real recordings —
-// tune once real test sessions are available.
-const REP_PEAK_THRESHOLD = 3;
-// Must fall back below this deviation before the next burst can register.
-const REP_RESET_THRESHOLD = 1.2;
-// Floor between counted peaks, so the tail of one burst isn't mistaken for
-// the start of the next.
+const DEFAULT_REP_PEAK_THRESHOLD = 3;
+const DEFAULT_REP_RESET_THRESHOLD = 1.2;
 const MIN_PEAK_INTERVAL_MS = 400;
-// Slow-moving average so the baseline tracks the phone's resting position
-// in the pocket without absorbing the rep bursts themselves.
 const BASELINE_SMOOTHING = 0.02;
 
-function detectMovementPeaks(samples: MotionSample[]): number[] {
+export type CalibrationResult = {
+  peakThreshold: number;
+  resetThreshold: number;
+  calibratedPeakCount: number;
+};
+
+/**
+ * Derives personalized peak/reset thresholds from calibration samples
+ * (2–3 practice reps). Finds all deviation peaks above a very low floor,
+ * then sets the real threshold at 50% of the median peak — low enough to
+ * catch weaker reps, high enough to reject noise.
+ */
+export function calibrateFromSamples(
+  samples: MotionSample[],
+): CalibrationResult | null {
+  if (samples.length < 20) return null;
+
+  let baseline: number | null = null;
+  const peakDeviations: number[] = [];
+  let armed = true;
+  let lastPeakAt = 0;
+
+  for (const sample of samples) {
+    const magnitude = Math.hypot(
+      sample.accelerationX,
+      sample.accelerationY,
+      sample.accelerationZ,
+    );
+    if (baseline === null) {
+      baseline = magnitude;
+      continue;
+    }
+    const deviation = magnitude - baseline;
+    baseline += BASELINE_SMOOTHING * (magnitude - baseline);
+
+    if (
+      armed &&
+      deviation > 0.8 &&
+      sample.timestampMs - lastPeakAt > MIN_PEAK_INTERVAL_MS
+    ) {
+      peakDeviations.push(deviation);
+      lastPeakAt = sample.timestampMs;
+      armed = false;
+    } else if (!armed && deviation < 0.4) {
+      armed = true;
+    }
+  }
+
+  if (peakDeviations.length < 2) return null;
+
+  const sorted = [...peakDeviations].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+
+  return {
+    peakThreshold: Math.max(1.0, median * 0.5),
+    resetThreshold: Math.max(0.3, median * 0.2),
+    calibratedPeakCount: peakDeviations.length,
+  };
+}
+
+function detectMovementPeaks(
+  samples: MotionSample[],
+  peakThreshold = DEFAULT_REP_PEAK_THRESHOLD,
+  resetThreshold = DEFAULT_REP_RESET_THRESHOLD,
+): number[] {
   let baseline: number | null = null;
   let armed = true;
   let lastPeakAt = 0;
@@ -41,13 +94,13 @@ function detectMovementPeaks(samples: MotionSample[]): number[] {
 
     if (
       armed &&
-      deviation > REP_PEAK_THRESHOLD &&
+      deviation > peakThreshold &&
       sample.timestampMs - lastPeakAt > MIN_PEAK_INTERVAL_MS
     ) {
       peakTimestamps.push(sample.timestampMs);
       lastPeakAt = sample.timestampMs;
       armed = false;
-    } else if (!armed && deviation < REP_RESET_THRESHOLD) {
+    } else if (!armed && deviation < resetThreshold) {
       armed = true;
     }
   }
@@ -93,12 +146,17 @@ function classifyRhythm(
 export function summarizeChairStandSamples(input: {
   samples: MotionSample[];
   durationSeconds: number;
+  calibration?: CalibrationResult | null;
 }): ChairStandMetrics {
   if (input.samples.length === 0 || input.durationSeconds <= 0) {
     return getGuidedChairStandMetrics();
   }
 
-  const peakTimestamps = detectMovementPeaks(input.samples);
+  const peakTimestamps = detectMovementPeaks(
+    input.samples,
+    input.calibration?.peakThreshold,
+    input.calibration?.resetThreshold,
+  );
   const repetitions = Math.floor(peakTimestamps.length / 2);
   // One timestamp per full rep cycle (every other peak: rise, then sit).
   const repCycleTimestamps = peakTimestamps.filter((_, index) => index % 2 === 0);
