@@ -1,5 +1,20 @@
 # PhysioAid Architecture Review & Goal-Based Implementation Plan
 
+## Status: IMPLEMENTED (2026-07-06)
+
+All goals below are implemented on branch `claude/physioaid-architecture-review-2afi5f`:
+Report Safety Fix (3ac4bcc), Goal 1 Trust Boundary (0256c70), Goal 5 Data Model
+(e747a75), Goal 2 Onboarding Gate (796f011), Goal 3 Preferences (cf5820e),
+Goal 4 Assessment Hub (1f89dda), Goal 6 Movement Log (922c30a + dc06af9),
+Goal 7 Community Opt-In (cfcc9fc), CI (85dd02b), Goal 8 AI Trends (8d00770),
+QA hardening (6670bf9). Verified by an independent 20-item acceptance audit
+(all PASS) plus a Playwright walk of the signed-out and demo flows.
+
+**Before go-live:** deploy the updated `firestore.rules`
+(`firebase deploy --only firestore:rules`) — profile and movement-log writes
+are denied until the nested rules are live. `OPENAI_API_KEY` is already set
+in Vercel.
+
 ## Context
 
 PhysioAid is a Next.js 15 + Firebase (Auth/Firestore) PWA for older-adult mobility screening in Singapore. PR #7 wired real Google sign-in, per-user assessment history, and AI activity recommendations — but the app still mixes demo identity, profile setup, assessment evidence, community activity, and movement tracking. The owner's target product model:
