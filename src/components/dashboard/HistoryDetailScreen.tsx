@@ -26,10 +26,15 @@ export function HistoryDetailScreen({
     if (session) {
       const id = saveSessionForReport(session);
       router.push(`/report/${id}`);
-    } else {
+    } else if (entry.sample) {
       // Sample entries have no stored session — open the explicit demo
       // report, which renders with its visible sample-data banner.
       router.push("/report/demo");
+    } else {
+      // A real entry whose session payload failed to load (e.g. corrupted
+      // local record) must never open the demo report — resolve by id so
+      // signed-in users get the Firestore copy or an honest not-found.
+      router.push(`/report/${entry.id}`);
     }
   }
 

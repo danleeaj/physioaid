@@ -165,14 +165,16 @@ export function deriveHubCards(
       physicalCardState("sit_to_stand", draft.chairStand, draft),
   );
 
-  // Walk — needs a chair-stand record whose gate passes.
+  // Walk — needs a REAL chair-stand record whose gate passes. A demo-source
+  // placeholder (guided-run injection without an explicit sample load) is
+  // not evidence and must not unlock a higher-risk test.
   const walkLock = physicalLock("walk");
   if (walkLock) {
     cards.push(walkLock);
-  } else if (!draft.chairStand) {
+  } else if (!isRecordedMetric(draft.chairStand, draft.demoLoaded)) {
     cards.push(locked("walk", "prerequisite", "Do the Sit to stand test first"));
   } else {
-    const chairGate = getChairStandGate(draft.chairStand, safetyFlagged);
+    const chairGate = getChairStandGate(draft.chairStand!, safetyFlagged);
     cards.push(
       chairGate.canProceed
         ? physicalCardState("walk", draft.motion, draft)
@@ -180,14 +182,14 @@ export function deriveHubCards(
     );
   }
 
-  // Floor rising — needs a walk record whose gate passes.
+  // Floor rising — needs a real walk record whose gate passes.
   const floorLock = physicalLock("floor_rising");
   if (floorLock) {
     cards.push(floorLock);
-  } else if (!draft.motion) {
+  } else if (!isRecordedMetric(draft.motion, draft.demoLoaded)) {
     cards.push(locked("floor_rising", "prerequisite", "Do the Walk test first"));
   } else {
-    const motionGate = getMotionGate(draft.motion);
+    const motionGate = getMotionGate(draft.motion!);
     cards.push(
       motionGate.canProceed
         ? physicalCardState("floor_rising", draft.floorRising, draft)
