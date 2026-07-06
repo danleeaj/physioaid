@@ -9,11 +9,9 @@ import { CarePartnerScreen } from "@/components/dashboard/CarePartnerScreen";
 import { HistoryDetailScreen } from "@/components/dashboard/HistoryDetailScreen";
 import { HistoryScreen } from "@/components/dashboard/HistoryScreen";
 import { PrivacyConsentScreen } from "@/components/dashboard/PrivacyConsentScreen";
-import {
-  ProfileScreen,
-  loadTextSizePreference,
-} from "@/components/dashboard/ProfileScreen";
+import { ProfileScreen } from "@/components/dashboard/ProfileScreen";
 import { useHistoryStore } from "@/components/dashboard/history-store";
+import { loadTextSizePreference } from "@/lib/preferences";
 import { markPracticedToday } from "@/lib/streak";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { SignInScreen } from "@/components/layout/SignInScreen";

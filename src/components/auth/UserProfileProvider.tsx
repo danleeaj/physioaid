@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -17,6 +18,7 @@ import {
   persistDemoProfile,
 } from "@/lib/demo/profile";
 import { isLanguage, LANGUAGE_STORAGE_KEY, type Language } from "@/lib/i18n/types";
+import { applyTextSize, persistTextSize, TEXT_SIZE_KEY } from "@/lib/preferences";
 import {
   createEmptyProfile,
   getUserProfile,
@@ -25,8 +27,6 @@ import {
 import type { TextSize, UserProfile } from "@/types/profile";
 
 const SESSION_KEY = "physioaid.session";
-/** Same key ProfileScreen writes today — Goal 3 centralizes it in lib/preferences. */
-const TEXT_SIZE_KEY = "physioaid.text-size";
 
 export type SessionKind = "signedOut" | "demo" | "firebase";
 
@@ -45,6 +45,8 @@ export type UserProfileContextValue = {
   onboardingStatus: "unknown" | "needed" | "in_progress" | "complete";
   /** firebase → optimistic state + setDoc merge + localStorage cache; demo → localStorage; signedOut → no-op. */
   updateProfile: (patch: Partial<UserProfile>) => Promise<void>;
+  /** Applies + persists immediately; also patches the profile when firebase/demo. */
+  setTextSize: (size: TextSize) => void;
   startDemo: () => void;
   endDemo: () => void;
 };
@@ -301,6 +303,48 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     [user, demoSession, firebaseState],
   );
 
+  const setTextSize = useCallback(
+    (size: TextSize) => {
+      applyTextSize(size);
+      persistTextSize(size);
+      if (sessionKind === "firebase" || sessionKind === "demo") {
+        void updateProfile({ textSize: size });
+      }
+    },
+    [sessionKind, updateProfile],
+  );
+
+  // Once a firebase/demo profile resolves, apply + cache its text size so a
+  // fresh browser (empty localStorage) renders correctly after load. Ref-
+  // guarded to run once per uid (once for demo) so it never fights a change
+  // the user makes in this session — keyed on the scalar textSize value, not
+  // the profile object, which gets a new identity on every updateProfile.
+  const appliedTextSizeRef = useRef<string | null>(null);
+  const resolvedTextSize =
+    sessionKind === "firebase"
+      ? (activeFirebase?.status === "loaded" && activeFirebase.profile
+          ? activeFirebase.profile.textSize
+          : null)
+      : sessionKind === "demo"
+        ? demoProfileState.textSize
+        : null;
+  useEffect(() => {
+    if (sessionKind === "firebase") {
+      if (profileLoading || !uid || resolvedTextSize === null) return;
+      const key = `firebase:${uid}`;
+      if (appliedTextSizeRef.current === key) return;
+      appliedTextSizeRef.current = key;
+      applyTextSize(resolvedTextSize);
+      persistTextSize(resolvedTextSize);
+    } else if (sessionKind === "demo") {
+      if (resolvedTextSize === null) return;
+      if (appliedTextSizeRef.current === "demo") return;
+      appliedTextSizeRef.current = "demo";
+      applyTextSize(resolvedTextSize);
+      persistTextSize(resolvedTextSize);
+    }
+  }, [sessionKind, uid, profileLoading, resolvedTextSize]);
+
   const startDemo = useCallback(() => {
     try {
       window.localStorage.setItem(SESSION_KEY, "demo");
@@ -328,6 +372,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
       profileLoading,
       onboardingStatus,
       updateProfile,
+      setTextSize,
       startDemo,
       endDemo,
     }),
@@ -339,6 +384,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
       profileLoading,
       onboardingStatus,
       updateProfile,
+      setTextSize,
       startDemo,
       endDemo,
     ],

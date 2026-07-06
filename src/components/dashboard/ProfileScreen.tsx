@@ -13,31 +13,14 @@ import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { shellCopy } from "@/components/layout/copy";
 import { TopBar } from "@/components/layout/TopBar";
 import { LangSwitch } from "@/components/i18n/LangSwitch";
-
-const TEXT_SIZE_KEY = "physioaid.text-size";
-type TextSize = "standard" | "large" | "xl";
+import { loadStoredTextSize } from "@/lib/preferences";
+import type { TextSize } from "@/types/profile";
 
 const textSizes: { id: TextSize; label: string }[] = [
   { id: "standard", label: "Standard" },
   { id: "large", label: "Large" },
   { id: "xl", label: "Extra large" },
 ];
-
-function applyTextSize(size: TextSize) {
-  if (size === "standard") {
-    delete document.documentElement.dataset.textSize;
-  } else {
-    document.documentElement.dataset.textSize = size;
-  }
-}
-
-export function loadTextSizePreference() {
-  if (typeof window === "undefined") return;
-  const stored = window.localStorage.getItem(TEXT_SIZE_KEY) as TextSize | null;
-  if (stored === "large" || stored === "xl") {
-    applyTextSize(stored);
-  }
-}
 
 /** Profile secondary screen — session identity, display settings, sign out. */
 export function ProfileScreen({
@@ -51,22 +34,15 @@ export function ProfileScreen({
   onOpenPrivacy: () => void;
   onSignOut: () => void;
 }) {
-  const { profile } = useUserProfile();
-  const [textSize, setTextSize] = useState<TextSize>(() => {
-    if (typeof window === "undefined") return "standard";
-    const stored = window.localStorage.getItem(TEXT_SIZE_KEY) as TextSize | null;
-    return stored === "large" || stored === "xl" ? stored : "standard";
-  });
+  const { profile, setTextSize: applyProfileTextSize } = useUserProfile();
+  const [textSize, setTextSize] = useState<TextSize>(
+    () => profile?.textSize ?? loadStoredTextSize(),
+  );
   const [reminders, setReminders] = useState(true);
 
   function selectTextSize(size: TextSize) {
     setTextSize(size);
-    applyTextSize(size);
-    try {
-      window.localStorage.setItem(TEXT_SIZE_KEY, size);
-    } catch {
-      // Preference stays for this session only.
-    }
+    applyProfileTextSize(size);
   }
 
   // Identity comes from the active profile — neutral treatment when the

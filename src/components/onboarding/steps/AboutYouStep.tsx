@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { TextField } from "@/components/assessment/ui/Fields";
 import { LangSwitch } from "@/components/i18n/LangSwitch";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { shellCopy } from "@/components/layout/copy";
+import { loadStoredTextSize } from "@/lib/preferences";
 import { PLANNING_AREAS } from "@/lib/planning-areas";
 import type { AgeGroup, TextSize, UserProfile } from "@/types/profile";
 
 const copy = shellCopy.onboarding;
-
-/** Same key ProfileScreen uses — Goal 3 centralizes this in lib/preferences. */
-const TEXT_SIZE_KEY = "physioaid.text-size";
 
 export const AGE_GROUP_OPTIONS: { id: AgeGroup; label: string }[] = [
   { id: "under60", label: "Under 60" },
@@ -37,15 +36,6 @@ export type AboutYouFields = Pick<
   | "textSize"
 >;
 
-/** Live-apply text size while choosing (same approach as ProfileScreen). */
-function applyTextSize(size: TextSize) {
-  if (size === "standard") {
-    delete document.documentElement.dataset.textSize;
-  } else {
-    document.documentElement.dataset.textSize = size;
-  }
-}
-
 /**
  * Identity + display preferences. Prefilled from the active profile (auth
  * display name for new accounts, the saved doc when resuming) and the
@@ -61,6 +51,7 @@ export function AboutYouStep({
   onContinue: (fields: AboutYouFields) => void;
 }) {
   const { lang } = useLanguage();
+  const { setTextSize: applyTextSizePreference } = useUserProfile();
   const [displayName, setDisplayName] = useState(profile?.displayName ?? "");
   const [ageGroup, setAgeGroup] = useState<AgeGroup | null>(
     profile?.ageGroup ?? null,
@@ -71,30 +62,17 @@ export function AboutYouStep({
   const [planningArea, setPlanningArea] = useState<string | null>(
     profile?.planningArea ?? null,
   );
-  // Device preference wins (a seeded doc equals it anyway); the profile value
-  // covers a doc created on another device. SSR-safe lazy initializer.
-  const [textSize, setTextSize] = useState<TextSize>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = window.localStorage.getItem(TEXT_SIZE_KEY);
-        if (stored === "standard" || stored === "large" || stored === "xl") {
-          return stored;
-        }
-      } catch {
-        // Storage unavailable — fall through to the profile value.
-      }
-    }
-    return profile?.textSize ?? "standard";
-  });
+  // Profile value wins when present (matches ProfileScreen); falls back to
+  // this device's stored preference for a fresh/no-doc account. SSR-safe.
+  const [textSize, setTextSize] = useState<TextSize>(
+    () => profile?.textSize ?? loadStoredTextSize(),
+  );
 
   function selectTextSize(size: TextSize) {
     setTextSize(size);
-    applyTextSize(size);
-    try {
-      window.localStorage.setItem(TEXT_SIZE_KEY, size);
-    } catch {
-      // Preference stays for this session only.
-    }
+    // Live preview: applies + persists to localStorage immediately and, once
+    // signed in, patches the profile the same way ProfileScreen does.
+    applyTextSizePreference(size);
   }
 
   return (
