@@ -97,6 +97,15 @@ export type MotionMetrics = {
   stabilityScore: number;
   rhythmConsistency: number;
   gaitSpeedMetersPerSecond?: number;
+  estimatedGaitSpeedMetersPerSecond?: number;
+  gaitSpeedEstimateSource?: "course_distance" | "estimated_step_length";
+  stepCount?: number;
+  cadenceStepsPerMinute?: number;
+  stepTimeMeanSeconds?: number;
+  stepTimeVariability?: number;
+  jerkVariability?: number;
+  rotationVariability?: number;
+  cycleQualityScore?: number;
   completionStatus?: "completed" | "stopped" | "skipped" | "demo";
   source: "accelerometer" | "manual" | "demo";
 };
