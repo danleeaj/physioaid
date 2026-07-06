@@ -9,10 +9,8 @@ import { FormGrid, TextField } from "@/components/assessment/ui/Fields";
 import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
-import {
-  getDemoChairStandMetrics,
-  getGuidedChairStandMetrics,
-} from "@/lib/vision/chair-stand";
+import { summarizeChairStandSamples } from "@/lib/sensors/chair-stand-detection";
+import { getDemoChairStandMetrics } from "@/lib/vision/chair-stand";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
 import type { CameraSupportStatus } from "@/lib/vision/camera";
 import type { MotionSupportStatus } from "@/types/motion";
@@ -52,8 +50,10 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
           },
         ]}
         guidedPocketMode
-        onPrimary={(samples) => {
-          setChairStand(getGuidedChairStandMetrics());
+        onPrimary={(samples, elapsedSeconds) => {
+          setChairStand(
+            summarizeChairStandSamples({ samples, durationSeconds: elapsedSeconds }),
+          );
           setMotionSampleCount(samples.length);
         }}
         primaryLabel="Start 30s test"
