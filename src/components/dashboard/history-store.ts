@@ -1,13 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   demoHistory,
   sessionToHistoryEntry,
   type HistoryEntry,
 } from "@/components/dashboard/demo-display-data";
 import { getAssessmentHistory } from "@/lib/assessment-history";
-import { normalizeSession } from "@/lib/assessment/normalize-session";
+import {
+  isDemoSessionId,
+  normalizeSession,
+} from "@/lib/assessment/normalize-session";
 import type { AssessmentSession } from "@/types/assessment";
 
 const LEGACY_STORAGE_KEY = "physioaid.history";
@@ -50,6 +53,10 @@ type SavedRecord = {
   entry: HistoryEntry;
   session?: AssessmentSession;
 };
+
+// Stable fallback so derived values (and the `sessions` memo) keep their
+// identity across renders when there is nothing to show.
+const NO_RECORDS: SavedRecord[] = [];
 
 function loadStoredRecords(storageKey: string): SavedRecord[] {
   if (typeof window === "undefined") return [];
@@ -123,7 +130,7 @@ export function useHistoryStore(session: HistorySession | null) {
   }, [storageKey]);
 
   const savedRecords =
-    local && local.key === storageKey ? local.records : [];
+    local && local.key === storageKey ? local.records : NO_RECORDS;
 
   useEffect(() => {
     if (!uid) return;
@@ -147,7 +154,8 @@ export function useHistoryStore(session: HistorySession | null) {
     };
   }, [uid]);
 
-  const remoteRecords = remote && remote.uid === uid ? remote.records : [];
+  const remoteRecords =
+    remote && remote.uid === uid ? remote.records : NO_RECORDS;
 
   const addSession = useCallback(
     (newSession: AssessmentSession) => {
@@ -182,6 +190,24 @@ export function useHistoryStore(session: HistorySession | null) {
 
   const entries = records.map((r) => r.entry);
 
+  // Normalized real sessions for the trend dashboard: local + remote saves,
+  // never explicit demo sessions and never the static sample journal (those
+  // entries carry no session payload). Memoized on the underlying stores so
+  // consumers can safely key effects on the array identity.
+  const sessions = useMemo(() => {
+    const seen = new Set<string>();
+    const result: AssessmentSession[] = [];
+    for (const record of [...savedRecords, ...remoteRecords]) {
+      const recordSession = record.session;
+      if (!recordSession) continue;
+      if (isDemoSessionId(recordSession.id)) continue;
+      if (seen.has(recordSession.id)) continue;
+      seen.add(recordSession.id);
+      result.push(recordSession);
+    }
+    return result;
+  }, [savedRecords, remoteRecords]);
+
   const getSession = useCallback(
     (entryId: string) =>
       records.find((r) => r.entry.id === entryId)?.session ?? null,
@@ -190,5 +216,5 @@ export function useHistoryStore(session: HistorySession | null) {
     [savedRecords, remoteRecords, session?.kind],
   );
 
-  return { entries, addSession, getSession };
+  return { entries, sessions, addSession, getSession };
 }

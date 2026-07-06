@@ -125,6 +125,29 @@ export const shellCopy = {
     viewResources: "View resources",
     backToAssessment: "Back to Assessment",
   },
+  trends: {
+    title: "Your progress",
+    emptyState: "Complete another assessment to see trends.",
+    metrics: {
+      overall: "Overall result",
+      confidence: "Confidence",
+      sit_to_stand: "Sit to stand",
+      gait_speed: "Walking speed",
+      floor_rising: "Floor rising",
+      timed_up_and_go: "Timed up and go",
+      functional_reach: "Functional reach",
+    },
+    // "Changed" (not "declined") — honest neutral wording with the values
+    // shown alongside; never alarming, never diagnostic.
+    direction: {
+      improved: "Improved",
+      steady: "Steady",
+      declined: "Changed",
+    },
+    missingTitle: "Not compared this time",
+    summaryTitle: "Summary",
+    summaryTitleAi: "AI summary",
+  },
   history: {
     title: "Assessment History",
     viewDetails: "View details",

@@ -68,7 +68,8 @@ export function AppShell() {
       : sessionKind === "demo"
         ? ({ kind: "demo" } as const)
         : null;
-  const { entries, addSession, getSession } = useHistoryStore(historySession);
+  const { entries, sessions, addSession, getSession } =
+    useHistoryStore(historySession);
 
   useEffect(() => {
     loadTextSizePreference();
@@ -224,6 +225,7 @@ export function AppShell() {
             {tab === "assessment" && (
               <AssessmentHome
                 entries={entries}
+                sessions={sessions}
                 onOpenExercise={() => openResources("videos")}
                 onOpenProfile={() => push({ name: "profile" })}
                 onStartAssessment={() => push({ name: "flow" })}

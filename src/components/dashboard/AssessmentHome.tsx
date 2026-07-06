@@ -11,6 +11,8 @@ import {
 import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { shellCopy } from "@/components/layout/copy";
 import type { HistoryEntry } from "@/components/dashboard/demo-display-data";
+import { TrendSection } from "@/components/dashboard/TrendSection";
+import type { AssessmentSession } from "@/types/assessment";
 
 const copy = shellCopy.home;
 
@@ -24,6 +26,7 @@ function greeting(): string {
 /** Assessment tab home — compact health dashboard, not a marketing page. */
 export function AssessmentHome({
   entries,
+  sessions,
   onStartAssessment,
   onOpenExercise,
   onViewHistory,
@@ -31,6 +34,8 @@ export function AssessmentHome({
   onOpenProfile,
 }: {
   entries: HistoryEntry[];
+  /** Normalized non-demo sessions (from useHistoryStore) for the trend dashboard. */
+  sessions: AssessmentSession[];
   onStartAssessment: () => void;
   onOpenExercise: () => void;
   onViewHistory: () => void;
@@ -123,6 +128,9 @@ export function AssessmentHome({
             </dl>
           </section>
         )}
+
+        {/* Trends over the two most recent checks */}
+        <TrendSection sessions={sessions} />
 
         {/* Recommended next step */}
         <section className="app-card grid gap-3">
