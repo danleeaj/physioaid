@@ -425,29 +425,23 @@ export function useAssessmentFlow(options: {
   }
 
   /**
-   * Fires when the guided walk finishes. Uses the real devicemotion samples
-   * captured during the run when the browser exposed them; falls back to a
-   * fixed placeholder on devices/browsers without motion sensor access.
+   * Fires when the guided walk finishes. Uses real devicemotion samples
+   * captured during the active 25 second pocket walk. Missing or unusable
+   * samples produce a stopped/unavailable gait result so the flow keeps its
+   * safety gate instead of fabricating a passing sensor result.
    */
-  function startGaitCountdown(samples: MotionSample[] = [], elapsedSeconds = 0) {
-    if (samples.length > 0) {
-      setMotion(
-        summarizeMotionSamples({
-          samples,
-          distanceMeters: gaitDistanceMeters,
-          durationSeconds: elapsedSeconds,
-        }),
-      );
-      return;
-    }
-
-    setMotion({
-      stabilityScore: 0.62,
-      rhythmConsistency: 0.58,
-      gaitSpeedMetersPerSecond: Number((gaitDistanceMeters / 5).toFixed(2)),
-      completionStatus: "completed",
-      source: "accelerometer",
-    });
+  function startGaitCountdown(
+    samples: MotionSample[] = [],
+    elapsedSeconds = 0,
+    stepLengthMeters?: number,
+  ) {
+    setMotion(
+      summarizeMotionSamples({
+        samples,
+        durationSeconds: elapsedSeconds,
+        stepLengthMeters,
+      }),
+    );
   }
 
   // --- Demo, finish, start over ----------------------------------------------

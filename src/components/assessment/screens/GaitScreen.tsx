@@ -9,6 +9,7 @@ import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
 import { useUserProfile } from "@/components/auth/UserProfileProvider";
+import { gaitProtocol } from "@/lib/sensors/gait-protocol";
 import { getDemoMotionMetrics } from "@/lib/sensors/motion-summary";
 import {
   DEFAULT_HEIGHT_METERS,
@@ -17,38 +18,8 @@ import {
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
 import type { MotionSupportStatus } from "@/types/motion";
 
-function DistanceSelector({
-  onChange,
-  value,
-}: {
-  onChange: (value: number) => void;
-  value: number;
-}) {
-  const distances = [4, 5, 10];
-
-  return (
-    <div>
-      <p className="mb-3 font-semibold">Walking distance</p>
-      <div className="grid grid-cols-3 gap-3" role="radiogroup">
-        {distances.map((distance) => {
-          const selected = value === distance;
-          return (
-            <button
-              aria-checked={selected}
-              className="choice-option justify-center"
-              data-selected={selected}
-              key={distance}
-              onClick={() => onChange(distance)}
-              role="radio"
-              type="button"
-            >
-              {distance}m
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+function formatOptionalNumber(value: number | undefined, suffix: string) {
+  return value === undefined ? "Not measured" : `${value}${suffix}`;
 }
 
 export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
@@ -57,8 +28,6 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
     setGaitPhase,
     motion,
     setMotion,
-    gaitDistanceMeters,
-    setGaitDistanceMeters,
     chairStandGate,
     motionGate,
     markGaitStoppedOrUnstable,
@@ -76,10 +45,7 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
   if (gaitPhase === "start") {
     return (
       <TestStartPanel
-        autoStopDistance={{
-          targetMeters: gaitDistanceMeters,
-          stepLengthMeters,
-        }}
+        autoCompleteSeconds={gaitProtocol.targetDurationSeconds}
         countdownCueWord="go"
         fallbackActions={[
           {
@@ -92,12 +58,28 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
           },
         ]}
         guidedPocketMode
-        onPrimary={startGaitCountdown}
-        primaryLabel="Start walk"
+        onPrimary={(samples, elapsedSeconds) =>
+          startGaitCountdown(samples, elapsedSeconds, stepLengthMeters)
+        }
+        primaryLabel="Start 25 sec walk"
         resultItems={[
           {
             label: "Gait speed",
             value: `${motion.gaitSpeedMetersPerSecond ?? 0} m/s`,
+          },
+          {
+            label: "Cadence",
+            value: formatOptionalNumber(
+              motion.cadenceStepsPerMinute,
+              " steps/min",
+            ),
+          },
+          {
+            label: "Steps",
+            value:
+              motion.stepCount === undefined
+                ? "Not measured"
+                : String(motion.stepCount),
           },
           {
             label: "Rhythm",
@@ -107,15 +89,29 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
             label: "Stability",
             value: `${Math.round(motion.stabilityScore * 100)}%`,
           },
+          {
+            label: "Quality",
+            value: `${Math.round((motion.cycleQualityScore ?? 0) * 100)}%`,
+          },
         ]}
-        safetyInstruction="Walk at your usual safe pace with the phone held steadily or placed in your pocket."
+        safetyInstruction="Walk at your usual safe pace for 25 seconds with the phone placed in a front pocket."
         showMotionReadout
         statusItems={[
           {
             label: "Motion",
             value: permissionLabel(motionStatus?.permissionState),
           },
-          { label: "Distance", value: `${gaitDistanceMeters}m` },
+          {
+            label: "Duration",
+            value: `${gaitProtocol.targetDurationSeconds}s`,
+          },
+          {
+            label: "Speed",
+            value:
+              motion.gaitSpeedEstimateSource === "course_distance"
+                ? "Course distance"
+                : "Step estimate",
+          },
         ]}
         title="Gait walk test"
       >
@@ -126,10 +122,6 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
           </SafetyCallout>
         )}
         <MotionSensorStatus onStatusChange={setMotionStatus} />
-        <DistanceSelector
-          onChange={setGaitDistanceMeters}
-          value={gaitDistanceMeters}
-        />
       </TestStartPanel>
     );
   }
