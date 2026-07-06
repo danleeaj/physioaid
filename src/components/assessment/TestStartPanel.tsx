@@ -5,7 +5,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ListenButton } from "@/components/i18n/ListenButton";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
-import { startMotionCapture } from "@/lib/sensors/browser-motion";
+import {
+  requestMotionPermission,
+  startMotionCapture,
+} from "@/lib/sensors/browser-motion";
 import type { MotionSample } from "@/types/motion";
 
 type DisplayItem = {
@@ -38,10 +41,56 @@ type TestStartPanelProps = {
   autoCompleteSeconds?: number;
   /** Show a live sample-count readout while running, proving the sensor is active. */
   showMotionReadout?: boolean;
+  /**
+   * Voice-guided pocket-mode sequence: request permission, then walk the
+   * participant through "place phone in pocket" → baseline → countdown,
+   * entirely by audio + vibration, since the screen isn't visible once the
+   * phone is put away.
+   */
+  guidedPocketMode?: boolean;
+  /** Word spoken at the end of the countdown, e.g. "begin" or "go". */
+  countdownCueWord?: string;
   children?: ReactNode;
 };
 
 type RunState = "ready" | "running" | "done";
+type GuidedStage = "priming" | "pocket" | "baseline" | "countdown" | "active";
+
+const POCKET_PLACEMENT_MS = 4000;
+const BASELINE_MS = 3000;
+const COUNTDOWN_MS = 3000;
+
+const GUIDED_STAGE_COPY: Record<
+  Exclude<GuidedStage, "active">,
+  { headline: string; detail: string }
+> = {
+  priming: {
+    headline: "Requesting motion access…",
+    detail: "Allow motion access if your browser asks.",
+  },
+  pocket: {
+    headline: "Place phone in pocket",
+    detail: "You have a few seconds to put the phone in a front pocket.",
+  },
+  baseline: {
+    headline: "Stand still",
+    detail: "Recording a resting baseline before the test begins.",
+  },
+  countdown: {
+    headline: "Get ready…",
+    detail: "3, 2, 1 — the test starts automatically.",
+  },
+};
+
+function vibrate(pattern: number | number[]) {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate(pattern);
+  }
+}
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
 
 export function TestStartPanel({
   title,
@@ -53,22 +102,34 @@ export function TestStartPanel({
   fallbackActions,
   autoCompleteSeconds,
   showMotionReadout = false,
+  guidedPocketMode = false,
+  countdownCueWord = "begin",
   children,
 }: TestStartPanelProps) {
-  const { t } = useLanguage();
+  const { t, speak, stopSpeaking } = useLanguage();
   const [runState, setRunState] = useState<RunState>("ready");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [motionSampleCount, setMotionSampleCount] = useState(0);
+  const [guidedStage, setGuidedStage] = useState<GuidedStage | null>(null);
+  const [guidedError, setGuidedError] = useState<string>();
   const onPrimaryRef = useRef(onPrimary);
   const samplesRef = useRef<MotionSample[]>([]);
+  const activeStartIndexRef = useRef(0);
   const stopCaptureRef = useRef<() => void>(() => {});
+  const cancelledRef = useRef(false);
+  const finishRunRef = useRef<(elapsed: number) => void>(() => {});
 
   useEffect(() => {
     onPrimaryRef.current = onPrimary;
   }, [onPrimary]);
 
   // Stop any in-flight sensor capture if the panel unmounts mid-run.
-  useEffect(() => () => stopCaptureRef.current(), []);
+  useEffect(() => {
+    return () => {
+      cancelledRef.current = true;
+      stopCaptureRef.current();
+    };
+  }, []);
 
   useEffect(() => {
     if (runState !== "running") {
@@ -80,31 +141,104 @@ export function TestStartPanel({
       setElapsedSeconds(elapsed);
       if (autoCompleteSeconds !== undefined && elapsed >= autoCompleteSeconds) {
         // Fires exactly once per run: the state change stops this interval.
-        stopCaptureRef.current();
-        onPrimaryRef.current(samplesRef.current, elapsed);
-        setRunState("done");
+        finishRunRef.current(elapsed);
       }
     }, 1000);
     return () => window.clearInterval(interval);
   }, [runState, autoCompleteSeconds]);
 
-  function startRun() {
-    setElapsedSeconds(0);
+  function beginCapture() {
     samplesRef.current = [];
+    activeStartIndexRef.current = 0;
     setMotionSampleCount(0);
-    // Sensors turn on the moment the participant presses Start, not before.
     stopCaptureRef.current = startMotionCapture((sample) => {
       samplesRef.current.push(sample);
       setMotionSampleCount(samplesRef.current.length);
     });
+  }
+
+  function beginActivePhase() {
+    setElapsedSeconds(0);
+    setGuidedStage("active");
     setRunState("running");
   }
 
-  function stopRun() {
+  function finishRun(elapsed: number) {
     stopCaptureRef.current();
-    onPrimary(samplesRef.current, elapsedSeconds);
+    setGuidedStage(null);
+    if (guidedPocketMode) {
+      speak("Test complete.");
+      vibrate([120, 80, 120]);
+    }
+    onPrimaryRef.current(
+      samplesRef.current.slice(activeStartIndexRef.current),
+      elapsed,
+    );
     setRunState("done");
   }
+
+  useEffect(() => {
+    finishRunRef.current = finishRun;
+  });
+
+  async function startRun() {
+    if (!guidedPocketMode) {
+      beginCapture();
+      beginActivePhase();
+      return;
+    }
+
+    cancelledRef.current = false;
+    setGuidedError(undefined);
+    setGuidedStage("priming");
+
+    const status = await requestMotionPermission();
+    if (cancelledRef.current) return;
+
+    if (status.permissionState === "denied") {
+      setGuidedError(status.message);
+      setGuidedStage(null);
+      return;
+    }
+
+    speak("Motion access granted.");
+    vibrate(120);
+    await wait(1200);
+    if (cancelledRef.current) return;
+
+    setGuidedStage("pocket");
+    speak("Place phone in pocket.");
+    vibrate(120);
+    await wait(POCKET_PLACEMENT_MS);
+    if (cancelledRef.current) return;
+
+    setGuidedStage("baseline");
+    speak("Stand still.");
+    beginCapture();
+    await wait(BASELINE_MS);
+    if (cancelledRef.current) return;
+
+    setGuidedStage("countdown");
+    speak(`3, 2, 1, ${countdownCueWord}.`);
+    await wait(COUNTDOWN_MS);
+    if (cancelledRef.current) return;
+
+    activeStartIndexRef.current = samplesRef.current.length;
+    beginActivePhase();
+  }
+
+  function cancelGuidedSequence() {
+    cancelledRef.current = true;
+    stopSpeaking();
+    stopCaptureRef.current();
+    setGuidedStage(null);
+  }
+
+  function stopRun() {
+    finishRun(elapsedSeconds);
+  }
+
+  const inGuidedPrelude = guidedStage !== null && guidedStage !== "active";
 
   return (
     <section className="grid gap-6">
@@ -136,11 +270,34 @@ export function TestStartPanel({
 
       {children}
 
-      {runState !== "running" && (
+      {guidedError && (
+        <SafetyCallout tone="danger">
+          {guidedError} You can still use manual entry or mark the test
+          unsafe below.
+        </SafetyCallout>
+      )}
+
+      {!inGuidedPrelude && runState !== "running" && (
         <SafetyCallout>{t("test.safetyReminder")}</SafetyCallout>
       )}
 
-      {runState === "running" ? (
+      {inGuidedPrelude && guidedStage !== null ? (
+        <div className="panel-card grid gap-6 p-6 text-center sm:p-8">
+          <p className="text-[length:var(--text-label)] font-bold uppercase tracking-wide text-[var(--muted)]">
+            {GUIDED_STAGE_COPY[guidedStage].headline}
+          </p>
+          <p aria-live="polite" className="text-[length:var(--text-lead)]">
+            {GUIDED_STAGE_COPY[guidedStage].detail}
+          </p>
+          <button
+            className="secondary-action w-full"
+            onClick={cancelGuidedSequence}
+            type="button"
+          >
+            Cancel test
+          </button>
+        </div>
+      ) : runState === "running" ? (
         <div className="panel-card grid gap-6 p-6 text-center sm:p-8">
           <p className="text-[length:var(--text-label)] font-bold uppercase tracking-wide text-[var(--muted)]">
             {t("test.elapsed")}
@@ -194,7 +351,7 @@ export function TestStartPanel({
         </div>
       )}
 
-      {runState !== "running" && (
+      {!inGuidedPrelude && runState !== "running" && (
         <div className="quiet-card p-5">
           <p className="mb-3 text-[length:var(--text-label)] font-bold text-[var(--muted)]">
             {t("test.otherOptions")}
