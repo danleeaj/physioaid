@@ -82,10 +82,6 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
             onClick: () => setGaitPhase("manual"),
           },
           {
-            label: "Use demo",
-            onClick: () => setMotion(getDemoMotionMetrics()),
-          },
-          {
             label: "Mark stopped or unstable",
             onClick: markGaitStoppedOrUnstable,
           },
