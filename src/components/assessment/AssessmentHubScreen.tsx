@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
-import { LangSwitch } from "@/components/i18n/LangSwitch";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { ConfirmDialog } from "@/components/layout/ConfirmDialog";
 import { TopBar } from "@/components/layout/TopBar";
@@ -192,11 +191,6 @@ export function AssessmentHubScreen({
         }
         title={copy.title}
       />
-      {/* Language switcher on its own scrollable row — four languages never fit the top bar */}
-      <div className="overflow-x-auto px-5 pt-3">
-        <LangSwitch />
-      </div>
-
       <div className="app-content flex-1">
         <p className="px-1 text-[length:var(--text-label)] text-[var(--muted)]">
           {copy.intro}

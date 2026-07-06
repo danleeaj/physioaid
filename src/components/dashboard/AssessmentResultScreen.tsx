@@ -25,6 +25,7 @@ import { profileCopy } from "@/content/clinical-copy";
 import { DECISION_SUPPORT_DISCLAIMER } from "@/config/clinical-config";
 import { saveSessionForReport } from "@/lib/report-session";
 import { saveAssessment } from "@/lib/assessment-history";
+import { getInviteByOwner, updateInviteSummary } from "@/lib/care-partner";
 import {
   buildSessionFromDraft,
   clearDraft,
@@ -147,6 +148,22 @@ export function AssessmentResultScreen({
     const session = buildSession();
     if (user) {
       saveAssessment(user.uid, session).catch(() => {});
+      getInviteByOwner(user.uid)
+        .then((invite) => {
+          if (!invite) return;
+          const completedTests: string[] = [];
+          if (session.questionnaire) completedTests.push("self_confidence");
+          if (session.chairStand) completedTests.push("sit_to_stand");
+          if (session.motion) completedTests.push("walk");
+          if (session.floorRising) completedTests.push("floor_rising");
+          return updateInviteSummary(invite.code, {
+            date: session.createdAt,
+            riskCategory: session.analytics?.riskCategory ?? null,
+            completedTests,
+            overallScore: session.analytics?.confidenceBand ?? null,
+          });
+        })
+        .catch(() => {});
     }
     clearDraft(flow.identity);
     setSaved(true);
