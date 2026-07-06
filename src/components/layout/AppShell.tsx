@@ -12,7 +12,7 @@ import { PrivacyConsentScreen } from "@/components/dashboard/PrivacyConsentScree
 import { ProfileScreen } from "@/components/dashboard/ProfileScreen";
 import { useHistoryStore } from "@/components/dashboard/history-store";
 import { loadTextSizePreference } from "@/lib/preferences";
-import { markPracticedToday } from "@/lib/streak";
+import { recordMovementActivity } from "@/lib/movement-log";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { SignInScreen } from "@/components/layout/SignInScreen";
 import { TabBar, type ShellTab } from "@/components/layout/TabBar";
@@ -164,7 +164,20 @@ export function AppShell() {
             onSaved={(session) => {
               addSession(session);
               // Completing a check counts toward the weekly movement goal.
-              markPracticedToday();
+              // historySession is non-null here — the flow only renders
+              // while signed in (demo or firebase).
+              if (historySession) {
+                void recordMovementActivity(historySession, {
+                  source: "assessment",
+                  activityType: "mobility_check",
+                  title: "Mobility check",
+                  durationMinutes: null,
+                  assessmentSessionId: session.id,
+                }).catch(() => {
+                  // Local copy already written inside recordMovementActivity;
+                  // nothing further to do if the remote sync fails.
+                });
+              }
               resetToTab("assessment");
             }}
             onViewResources={() => openResources("videos")}

@@ -3,8 +3,9 @@
 import { Heart, MapPin, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { useUserProfile } from "@/components/auth/UserProfileProvider";
+import { useMovementLog } from "@/components/community/useMovementLog";
+import type { HistorySession } from "@/components/dashboard/history-store";
 import { shellCopy } from "@/components/layout/copy";
-import { activeDaysThisWeek, loadPracticeLog } from "@/lib/streak";
 
 type FeedSegment = "nearby" | "friends" | "groups";
 
@@ -76,7 +77,7 @@ const segments: { id: FeedSegment; label: string }[] = [
 const WEEKLY_GOAL_DAYS = 3;
 
 function daysLeftThisWeek(): number {
-  // Monday-based week to match activeDaysThisWeek in lib/streak.
+  // Monday-based week to match getActiveDaysThisWeek in lib/movement-log.
   return 7 - ((new Date().getDay() + 6) % 7) - 1;
 }
 
@@ -84,15 +85,17 @@ function daysLeftThisWeek(): number {
 export function CommunityTab() {
   // Interim gate (Goal 7 replaces this with a real opt-in feed): the sample
   // feed is demo-story content and must never render for real users.
-  const { isDemo } = useUserProfile();
+  const { isDemo, uid } = useUserProfile();
   const [kudos, setKudos] = useState<Record<string, boolean>>({});
   const [segment, setSegment] = useState<FeedSegment>("nearby");
-  // Real device-local movement log (lazy init; [] on the server render).
-  const [activeDays] = useState(() =>
-    typeof window === "undefined" ? 0 : activeDaysThisWeek(loadPracticeLog()),
-  );
+  const historySession: HistorySession | null = uid
+    ? { kind: "firebase", uid }
+    : isDemo
+      ? { kind: "demo" }
+      : null;
+  const { activeDaysThisWeek } = useMovementLog(historySession);
 
-  const goalDays = Math.min(activeDays, WEEKLY_GOAL_DAYS);
+  const goalDays = Math.min(activeDaysThisWeek, WEEKLY_GOAL_DAYS);
   const daysLeft = daysLeftThisWeek();
   const visible = feedItems.filter((item) => item.segments.includes(segment));
 
