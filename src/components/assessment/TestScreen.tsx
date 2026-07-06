@@ -76,6 +76,7 @@ export function TestScreen({
         ? flow.draft.motion
         : flow.draft.floorRising;
   const hasRecord = isRecordedMetric(metric, flow.draft.demoLoaded);
+  const nextTestId = flow.nextTestAfter(testId);
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -87,14 +88,23 @@ export function TestScreen({
       </div>
       {hasRecord && (
         <footer className="flow-footer">
-          <button
-            className="primary-action w-full"
-            onClick={onBack}
-            type="button"
-          >
-            <Check aria-hidden size={22} />
-            {shellCopy.test.doneBackToHub}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              className="link-action shrink-0"
+              onClick={onBack}
+              type="button"
+            >
+              {shellCopy.test.pause}
+            </button>
+            <button
+              className="primary-action w-full flex-1"
+              onClick={() => flow.continueFromTest(testId)}
+              type="button"
+            >
+              <Check aria-hidden size={22} />
+              {nextTestId ? shellCopy.test.continueToNext : shellCopy.test.doneBackToHub}
+            </button>
+          </div>
         </footer>
       )}
     </div>
