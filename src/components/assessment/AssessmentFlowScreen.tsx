@@ -32,7 +32,7 @@ export function AssessmentFlowScreen({
   onSaved: (session: AssessmentSession) => void;
   onViewResources: () => void;
 }) {
-  const { uid } = useUserProfile();
+  const { uid, profile } = useUserProfile();
   // Draft namespace: signed-in users get their own draft; demo mode shares
   // the "demo" namespace (the flow is only reachable when signed in or demo).
   const identity = uid ?? "demo";
@@ -45,7 +45,12 @@ export function AssessmentFlowScreen({
     (log) =>
       log.source === "exercise" && toLocalDateKey(log.completedAt) === todayKey,
   );
-  const flow = useAssessmentFlow({ identity, demoMode, exerciseDoneToday });
+  const flow = useAssessmentFlow({
+    identity,
+    demoMode,
+    exerciseDoneToday,
+    profileConsentGiven: profile?.consents.assessmentConsent,
+  });
   const { t, lang } = useLanguage();
 
   if (flow.view === "result") {

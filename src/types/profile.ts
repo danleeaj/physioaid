@@ -26,6 +26,8 @@ export type UserProfile = {
   livingSituation: string;
   /** From PLANNING_AREAS. */
   planningArea: string | null;
+  /** Self-reported height in centimetres — used for step-length estimation. */
+  heightCm: number | null;
   preferredLanguage: Language;
   textSize: TextSize;
   /** null = skipped. */

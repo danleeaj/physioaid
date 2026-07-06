@@ -30,6 +30,7 @@ export type AboutYouFields = Pick<
   | "ageGroup"
   | "livingSituation"
   | "planningArea"
+  | "heightCm"
   | "preferredLanguage"
   | "textSize"
 >;
@@ -60,6 +61,9 @@ export function AboutYouStep({
   );
   const [planningArea, setPlanningArea] = useState<string | null>(
     profile?.planningArea ?? null,
+  );
+  const [heightCm, setHeightCm] = useState<number | null>(
+    profile?.heightCm ?? null,
   );
   // Profile value wins when present (matches ProfileScreen); falls back to
   // this device's stored preference for a fresh/no-doc account. SSR-safe.
@@ -138,6 +142,13 @@ export function AboutYouStep({
         </select>
       </label>
 
+      <TextField
+        label={copy.aboutYou.heightLabel}
+        onChange={(value) => setHeightCm(value ? Number(value) : null)}
+        type="number"
+        value={heightCm !== null ? String(heightCm) : ""}
+      />
+
       <div className="grid gap-2">
         <p className="text-[length:var(--text-label)] font-bold">
           {copy.aboutYou.languageLabel}
@@ -178,6 +189,7 @@ export function AboutYouStep({
               ageGroup,
               livingSituation: livingSituation.trim(),
               planningArea,
+              heightCm,
               preferredLanguage: lang,
               textSize,
             })

@@ -86,8 +86,11 @@ function emptyFloorRisingMetrics(): FloorRisingMetrics {
   return { completionStatus: "skipped", requiredAssistance: false, source: "manual" };
 }
 
-function hydrateDraft(identity: string): SessionDraft {
-  return loadDraft(identity) ?? createEmptyDraft();
+function hydrateDraft(
+  identity: string,
+  profileConsentGiven?: boolean,
+): SessionDraft {
+  return loadDraft(identity) ?? createEmptyDraft({ profileConsentGiven });
 }
 
 /**
@@ -102,12 +105,15 @@ export function useAssessmentFlow(options: {
   demoMode: boolean;
   /** From the movement log — drives the exercise card's "Done today" state. */
   exerciseDoneToday?: boolean;
+  /** When true, new drafts start with assessmentConsent pre-filled. */
+  profileConsentGiven?: boolean;
 }) {
-  const { identity, demoMode, exerciseDoneToday } = options;
+  const { identity, demoMode, exerciseDoneToday, profileConsentGiven } =
+    options;
 
   const [draftState, setDraftState] = useState(() => ({
     identity,
-    draft: hydrateDraft(identity),
+    draft: hydrateDraft(identity, profileConsentGiven),
   }));
   const [view, setView] = useState<AssessmentView>("hub");
   const [chairStandPhase, setChairStandPhase] =
@@ -121,7 +127,7 @@ export function useAssessmentFlow(options: {
   // render so another account's draft is never shown (React's sanctioned
   // "adjust state during render" pattern).
   if (draftState.identity !== identity) {
-    setDraftState({ identity, draft: hydrateDraft(identity) });
+    setDraftState({ identity, draft: hydrateDraft(identity, profileConsentGiven) });
     setView("hub");
   }
 
