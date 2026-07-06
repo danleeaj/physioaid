@@ -9,6 +9,11 @@ rules_version = '2';
 //
 // Every document carries a userId field stamped by its writer. Users can only
 // touch their own records, and writes must stamp their own uid into userId.
+//
+// plannerAggregates/{document=**} is publicly readable, never client-writable
+// (populated out-of-band, e.g. by a Cloud Function or admin script — not by
+// any code in this repo).
+//
 // Everything else is denied. Deploy BEFORE the client code that reads/writes
 // these paths.
 service cloud.firestore {
@@ -35,6 +40,11 @@ service cloud.firestore {
           && request.auth.uid == uid
           && request.resource.data.userId == request.auth.uid;
       }
+    }
+
+    match /plannerAggregates/{document=**} {
+      allow read: if true;
+      allow write: if false;
     }
 
     match /{document=**} {
