@@ -5,13 +5,11 @@ import { DemoInstructionScreen } from "@/components/assessment/demos/DemoInstruc
 type FloorRisingDemoProps = {
   onContinue: () => void;
   onSkip: () => void;
-  onUseDemo: () => void;
 };
 
 export function FloorRisingDemo({
   onContinue,
   onSkip,
-  onUseDemo,
 }: FloorRisingDemoProps) {
   return (
     <DemoInstructionScreen
@@ -25,11 +23,9 @@ export function FloorRisingDemo({
       ]}
       onPrimary={onContinue}
       onSecondary={onSkip}
-      onTertiary={onUseDemo}
       safetyNote="Floor-rising is the highest-risk movement in this flow. Skipping is always acceptable."
       secondaryLabel="Skip this test"
       secondaryProminent
-      tertiaryLabel="Use demo floor-rising"
       title="Floor-rising camera setup"
     />
   );

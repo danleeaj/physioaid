@@ -4,13 +4,9 @@ import { DemoInstructionScreen } from "@/components/assessment/demos/DemoInstruc
 
 type ChairStandDemoProps = {
   onContinue: () => void;
-  onUseDemo: () => void;
 };
 
-export function ChairStandDemo({
-  onContinue,
-  onUseDemo,
-}: ChairStandDemoProps) {
+export function ChairStandDemo({ onContinue }: ChairStandDemoProps) {
   return (
     <DemoInstructionScreen
       animation={<ChairStandAnimation />}
@@ -22,9 +18,7 @@ export function ChairStandDemo({
         "Stop if you feel dizzy, breathless, or unsafe.",
       ]}
       onPrimary={onContinue}
-      onSecondary={onUseDemo}
       safetyNote="Use support nearby if needed. Do not continue if you feel unwell."
-      secondaryLabel="Use demo chair stand"
       title="Chair stand demo"
     />
   );

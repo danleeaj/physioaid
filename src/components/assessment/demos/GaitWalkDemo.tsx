@@ -4,10 +4,9 @@ import { DemoInstructionScreen } from "@/components/assessment/demos/DemoInstruc
 
 type GaitWalkDemoProps = {
   onContinue: () => void;
-  onUseDemo: () => void;
 };
 
-export function GaitWalkDemo({ onContinue, onUseDemo }: GaitWalkDemoProps) {
+export function GaitWalkDemo({ onContinue }: GaitWalkDemoProps) {
   return (
     <DemoInstructionScreen
       animation={<GaitWalkAnimation />}
@@ -19,9 +18,7 @@ export function GaitWalkDemo({ onContinue, onUseDemo }: GaitWalkDemoProps) {
         "Stop if you feel unsteady or unsafe.",
       ]}
       onPrimary={onContinue}
-      onSecondary={onUseDemo}
       safetyNote="Use a clear, dry path. Stop and sit down if you feel unsteady."
-      secondaryLabel="Use demo gait walk"
       title="Gait walk demo"
     />
   );

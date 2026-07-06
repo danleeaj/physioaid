@@ -31,13 +31,7 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
 
   if (chairStandPhase === "demo") {
     return (
-      <ChairStandDemo
-        onContinue={() => setChairStandPhase("start")}
-        onUseDemo={() => {
-          setChairStand(getDemoChairStandMetrics());
-          setChairStandPhase("start");
-        }}
-      />
+      <ChairStandDemo onContinue={() => setChairStandPhase("start")} />
     );
   }
 
