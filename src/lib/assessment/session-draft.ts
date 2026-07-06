@@ -72,11 +72,19 @@ function newDraftId(): string {
     : `draft-${Date.now()}`;
 }
 
-export function createEmptyDraft(): SessionDraft {
+export function createEmptyDraft(options?: {
+  profileConsentGiven?: boolean;
+}): SessionDraft {
   return {
     id: newDraftId(),
     startedAt: new Date().toISOString(),
-    consent: { assessmentConsent: false, researchConsent: false },
+    consent: {
+      assessmentConsent: options?.profileConsentGiven ?? false,
+      researchConsent: false,
+      consentedAt: options?.profileConsentGiven
+        ? new Date().toISOString()
+        : undefined,
+    },
     safety: null,
     questionnaire: null,
     questionnaireIndex: 0,

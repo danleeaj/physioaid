@@ -67,6 +67,7 @@ function profileFromAuthUser(user: User): UserProfile {
     ageGroup: null,
     livingSituation: "",
     planningArea: null,
+    heightCm: null,
     preferredLanguage: "en",
     textSize: "standard",
     supportContact: null,

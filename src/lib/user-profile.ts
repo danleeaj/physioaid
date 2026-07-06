@@ -49,6 +49,7 @@ export function createEmptyProfile(uid: string, seed: ProfileSeed): UserProfile 
     ageGroup: null,
     livingSituation: "",
     planningArea: null,
+    heightCm: null,
     preferredLanguage: seed.preferredLanguage ?? "en",
     textSize: seed.textSize ?? "standard",
     supportContact: null,

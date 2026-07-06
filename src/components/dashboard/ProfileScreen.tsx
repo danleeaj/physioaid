@@ -57,6 +57,7 @@ export function ProfileScreen({
     .join("");
   const identityMeta = [
     profile?.ageGroup ? copy.ageGroupPrefix(profile.ageGroup) : null,
+    profile?.heightCm ? `${profile.heightCm} cm` : null,
     profile?.planningArea ?? null,
   ].filter((segment): segment is string => segment !== null);
 

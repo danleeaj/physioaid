@@ -8,6 +8,7 @@ import { FormGrid, TextField } from "@/components/assessment/ui/Fields";
 import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
+import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { getDemoMotionMetrics } from "@/lib/sensors/motion-summary";
 import {
   DEFAULT_HEIGHT_METERS,
@@ -63,10 +64,9 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
     markGaitStoppedOrUnstable,
     startGaitCountdown,
   } = flow;
+  const { profile } = useUserProfile();
   const [motionStatus, setMotionStatus] = useState<MotionSupportStatus>();
-  const [heightCm, setHeightCm] = useState(
-    Math.round(DEFAULT_HEIGHT_METERS * 100),
-  );
+  const heightCm = profile?.heightCm ?? Math.round(DEFAULT_HEIGHT_METERS * 100);
   const stepLengthMeters = estimateStepLengthMeters(heightCm / 100);
 
   if (gaitPhase === "demo") {
@@ -129,12 +129,6 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
         <DistanceSelector
           onChange={setGaitDistanceMeters}
           value={gaitDistanceMeters}
-        />
-        <TextField
-          label="Height in cm (used to estimate step length for auto-stop)"
-          onChange={(value) => setHeightCm(Number(value))}
-          type="number"
-          value={String(heightCm)}
         />
       </TestStartPanel>
     );

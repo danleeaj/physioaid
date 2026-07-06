@@ -18,6 +18,7 @@ export const demoProfile: UserProfile = {
   ageGroup: "70s",
   livingSituation: "Lives with spouse",
   planningArea: "Toa Payoh",
+  heightCm: 168,
   preferredLanguage: "en",
   textSize: "standard",
   supportContact: null,
