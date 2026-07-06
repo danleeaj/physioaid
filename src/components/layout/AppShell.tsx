@@ -15,6 +15,7 @@ import {
 } from "@/components/dashboard/ProfileScreen";
 import { useHistoryStore } from "@/components/dashboard/history-store";
 import { markPracticedToday } from "@/lib/streak";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { SignInScreen } from "@/components/layout/SignInScreen";
 import { TabBar, type ShellTab } from "@/components/layout/TabBar";
 import { CommunityTab } from "@/components/layout/tabs/CommunityTab";
@@ -40,7 +41,15 @@ type Screen =
  */
 export function AppShell() {
   const { user, loading, signOut } = useAuth();
-  const { sessionKind, isDemo, uid, startDemo, endDemo } = useUserProfile();
+  const {
+    sessionKind,
+    isDemo,
+    uid,
+    startDemo,
+    endDemo,
+    profileLoading,
+    onboardingStatus,
+  } = useUserProfile();
   // false during SSR/hydration, true on the client afterwards — keeps the
   // server HTML (splash) and first client paint identical.
   const hydrated = useSyncExternalStore(
@@ -102,8 +111,14 @@ export function AppShell() {
     resetToTab("resources");
   }
 
-  // Neutral splash while Firebase restores the session — avoids a Sign In flash.
-  if (!hydrated || loading) {
+  // Neutral splash while Firebase restores the session or the profile doc
+  // resolves — avoids flashing Sign In, the app, or onboarding prematurely.
+  if (
+    !hydrated ||
+    loading ||
+    (sessionKind === "firebase" &&
+      (profileLoading || onboardingStatus === "unknown"))
+  ) {
     return (
       <div className="app-viewport">
         <main aria-busy="true" className="app-shell" />
@@ -123,6 +138,19 @@ export function AppShell() {
               onDemo={handleStartDemo}
             />
           )}
+        </main>
+      </div>
+    );
+  }
+
+  // Onboarding gate: signed-in Firebase accounts must finish profile setup
+  // before the app renders. Demo mode never lands here (demoProfile is
+  // onboarding-complete) and the splash above holds until status resolves.
+  if (sessionKind === "firebase" && onboardingStatus !== "complete") {
+    return (
+      <div className="app-viewport">
+        <main className="app-shell">
+          <OnboardingFlow />
         </main>
       </div>
     );

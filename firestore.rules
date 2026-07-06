@@ -2,17 +2,39 @@ rules_version = '2';
 
 // Physio-Aid Firestore rules.
 //
-// Assessments live at users/{uid}/assessments/{assessmentId} and every saved
-// document carries a userId field (written by saveAssessment in
-// src/lib/assessment-history.ts). Users can only touch their own records,
-// and writes must stamp their own uid into userId. Everything else is denied.
+// All user data nests under users/{uid}:
+//   users/{uid}                          — profile doc (src/lib/user-profile.ts)
+//   users/{uid}/assessments/{id}         — saved sessions (src/lib/assessment-history.ts)
+//   users/{uid}/movementLogs/{id}        — movement activity (Goal 6, src/lib/movement-log.ts)
+//
+// Every document carries a userId field stamped by its writer. Users can only
+// touch their own records, and writes must stamp their own uid into userId.
+// Everything else is denied. Deploy BEFORE the client code that reads/writes
+// these paths.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid}/assessments/{assessmentId} {
+    match /users/{uid} {
+      // Profile document at the users/{uid} root.
       allow read, delete: if request.auth != null && request.auth.uid == uid;
       allow create, update: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.userId == request.auth.uid;
+        && request.resource.data.userId == uid;
+
+      // Assessment history (semantics unchanged from the flat rules).
+      match /assessments/{assessmentId} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && request.resource.data.userId == request.auth.uid;
+      }
+
+      // Movement activity log (same owner-only + userId stamp pattern).
+      match /movementLogs/{logId} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && request.resource.data.userId == request.auth.uid;
+      }
     }
 
     match /{document=**} {
