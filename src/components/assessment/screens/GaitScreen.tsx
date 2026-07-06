@@ -95,6 +95,7 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
           },
         ]}
         safetyInstruction="Walk at your usual safe pace with the phone held steadily or placed in your pocket."
+        showMotionReadout
         statusItems={[
           {
             label: "Motion",

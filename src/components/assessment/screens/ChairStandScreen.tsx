@@ -28,6 +28,7 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
   } = flow;
   const [motionStatus, setMotionStatus] = useState<MotionSupportStatus>();
   const [cameraStatus, setCameraStatus] = useState<CameraSupportStatus>();
+  const [motionSampleCount, setMotionSampleCount] = useState<number>();
 
   if (chairStandPhase === "demo") {
     return (
@@ -49,7 +50,10 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
             onClick: markChairStoppedOrUnsafe,
           },
         ]}
-        onPrimary={() => setChairStand(getGuidedChairStandMetrics())}
+        onPrimary={(samples) => {
+          setChairStand(getGuidedChairStandMetrics());
+          setMotionSampleCount(samples.length);
+        }}
         primaryLabel="Start 30s test"
         resultItems={[
           ["Reps", `${chairStand.repetitions}`],
@@ -59,8 +63,12 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
             chairStand.movementQuality?.replaceAll("_", " ") ??
               "not assessed",
           ],
+          ...(motionSampleCount !== undefined
+            ? ([["Motion samples captured", `${motionSampleCount}`]] as const)
+            : []),
         ].map(([label, value]) => ({ label, value }))}
         safetyInstruction="Use a stable chair, keep both feet flat, and stop if you feel dizzy, breathless, or unsafe."
+        showMotionReadout
         statusItems={[
           {
             label: "Motion",

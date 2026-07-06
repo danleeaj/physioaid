@@ -5,6 +5,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ListenButton } from "@/components/i18n/ListenButton";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { startMotionCapture } from "@/lib/sensors/browser-motion";
+import type { MotionSample } from "@/types/motion";
 
 type DisplayItem = {
   label: string;
@@ -24,14 +26,18 @@ type TestStartPanelProps = {
   /**
    * Fires exactly once per run, when the run finishes (Stop pressed or the
    * countdown completes). Metric-injection semantics match the old
-   * tap-to-complete behaviour.
+   * tap-to-complete behaviour. Receives the real devicemotion samples
+   * collected between Start and Stop (empty if motion capture isn't
+   * supported on this device/browser) plus the run's elapsed duration.
    */
-  onPrimary: () => void;
+  onPrimary: (samples: MotionSample[], elapsedSeconds: number) => void;
   statusItems: DisplayItem[];
   resultItems?: DisplayItem[];
   fallbackActions: FallbackAction[];
   /** Auto-complete the run after this many seconds (e.g. 30 for chair stand). */
   autoCompleteSeconds?: number;
+  /** Show a live sample-count readout while running, proving the sensor is active. */
+  showMotionReadout?: boolean;
   children?: ReactNode;
 };
 
@@ -46,16 +52,23 @@ export function TestStartPanel({
   resultItems = [],
   fallbackActions,
   autoCompleteSeconds,
+  showMotionReadout = false,
   children,
 }: TestStartPanelProps) {
   const { t } = useLanguage();
   const [runState, setRunState] = useState<RunState>("ready");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [motionSampleCount, setMotionSampleCount] = useState(0);
   const onPrimaryRef = useRef(onPrimary);
+  const samplesRef = useRef<MotionSample[]>([]);
+  const stopCaptureRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     onPrimaryRef.current = onPrimary;
   }, [onPrimary]);
+
+  // Stop any in-flight sensor capture if the panel unmounts mid-run.
+  useEffect(() => () => stopCaptureRef.current(), []);
 
   useEffect(() => {
     if (runState !== "running") {
@@ -67,7 +80,8 @@ export function TestStartPanel({
       setElapsedSeconds(elapsed);
       if (autoCompleteSeconds !== undefined && elapsed >= autoCompleteSeconds) {
         // Fires exactly once per run: the state change stops this interval.
-        onPrimaryRef.current();
+        stopCaptureRef.current();
+        onPrimaryRef.current(samplesRef.current, elapsed);
         setRunState("done");
       }
     }, 1000);
@@ -76,11 +90,19 @@ export function TestStartPanel({
 
   function startRun() {
     setElapsedSeconds(0);
+    samplesRef.current = [];
+    setMotionSampleCount(0);
+    // Sensors turn on the moment the participant presses Start, not before.
+    stopCaptureRef.current = startMotionCapture((sample) => {
+      samplesRef.current.push(sample);
+      setMotionSampleCount(samplesRef.current.length);
+    });
     setRunState("running");
   }
 
   function stopRun() {
-    onPrimary();
+    stopCaptureRef.current();
+    onPrimary(samplesRef.current, elapsedSeconds);
     setRunState("done");
   }
 
@@ -126,6 +148,11 @@ export function TestStartPanel({
           <p aria-live="polite" className="text-7xl font-bold tabular-nums">
             {elapsedSeconds}
           </p>
+          {showMotionReadout && (
+            <p aria-live="polite" className="text-sm text-[var(--muted)]">
+              Motion samples captured: {motionSampleCount}
+            </p>
+          )}
           <p className="text-[length:var(--text-lead)] font-semibold text-[var(--danger)]">
             {t("test.safetyReminder")}
           </p>
