@@ -9,6 +9,7 @@ import {
   requestMotionPermission,
   startMotionCapture,
 } from "@/lib/sensors/browser-motion";
+import { createStepCounter, type StepProgress } from "@/lib/sensors/step-detection";
 import type { MotionSample } from "@/types/motion";
 
 type DisplayItem = {
@@ -50,6 +51,13 @@ type TestStartPanelProps = {
   guidedPocketMode?: boolean;
   /** Word spoken at the end of the countdown, e.g. "begin" or "go". */
   countdownCueWord?: string;
+  /**
+   * When set, the active phase auto-completes once step-based distance
+   * (accelerometer peak detection × estimated step length) reaches
+   * targetMeters — no GPS involved. Lets a distance-based test auto-stop
+   * even though the phone can't be seen once it's in a pocket.
+   */
+  autoStopDistance?: { targetMeters: number; stepLengthMeters: number };
   children?: ReactNode;
 };
 
@@ -104,6 +112,7 @@ export function TestStartPanel({
   showMotionReadout = false,
   guidedPocketMode = false,
   countdownCueWord = "begin",
+  autoStopDistance,
   children,
 }: TestStartPanelProps) {
   const { t, speak, stopSpeaking } = useLanguage();
@@ -112,11 +121,17 @@ export function TestStartPanel({
   const [motionSampleCount, setMotionSampleCount] = useState(0);
   const [guidedStage, setGuidedStage] = useState<GuidedStage | null>(null);
   const [guidedError, setGuidedError] = useState<string>();
+  const [stepProgress, setStepProgress] = useState<StepProgress>();
   const onPrimaryRef = useRef(onPrimary);
   const samplesRef = useRef<MotionSample[]>([]);
   const activeStartIndexRef = useRef(0);
+  const activeStartedAtRef = useRef(0);
   const stopCaptureRef = useRef<() => void>(() => {});
+  const stepCounterRef = useRef<ReturnType<typeof createStepCounter> | null>(
+    null,
+  );
   const cancelledRef = useRef(false);
+  const finishedRef = useRef(false);
   const finishRunRef = useRef<(elapsed: number) => void>(() => {});
 
   useEffect(() => {
@@ -150,20 +165,46 @@ export function TestStartPanel({
   function beginCapture() {
     samplesRef.current = [];
     activeStartIndexRef.current = 0;
+    finishedRef.current = false;
     setMotionSampleCount(0);
+    setStepProgress(undefined);
     stopCaptureRef.current = startMotionCapture((sample) => {
       samplesRef.current.push(sample);
       setMotionSampleCount(samplesRef.current.length);
+      stepCounterRef.current?.addSample(sample);
     });
   }
 
   function beginActivePhase() {
     setElapsedSeconds(0);
+    activeStartedAtRef.current = Date.now();
     setGuidedStage("active");
     setRunState("running");
+
+    if (autoStopDistance) {
+      stepCounterRef.current = createStepCounter({
+        stepLengthMeters: autoStopDistance.stepLengthMeters,
+        onStep: (progress) => {
+          setStepProgress(progress);
+          if (
+            !finishedRef.current &&
+            progress.distanceMeters >= autoStopDistance.targetMeters
+          ) {
+            const elapsed = Math.floor(
+              (Date.now() - activeStartedAtRef.current) / 1000,
+            );
+            finishRunRef.current(elapsed);
+          }
+        },
+      });
+    } else {
+      stepCounterRef.current = null;
+    }
   }
 
   function finishRun(elapsed: number) {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
     stopCaptureRef.current();
     setGuidedStage(null);
     if (guidedPocketMode) {
@@ -308,6 +349,13 @@ export function TestStartPanel({
           {showMotionReadout && (
             <p aria-live="polite" className="text-sm text-[var(--muted)]">
               Motion samples captured: {motionSampleCount}
+            </p>
+          )}
+          {autoStopDistance && (
+            <p aria-live="polite" className="text-sm text-[var(--muted)]">
+              Distance: {(stepProgress?.distanceMeters ?? 0).toFixed(1)}m /{" "}
+              {autoStopDistance.targetMeters}m ({stepProgress?.stepCount ?? 0}{" "}
+              steps)
             </p>
           )}
           <p className="text-[length:var(--text-lead)] font-semibold text-[var(--danger)]">

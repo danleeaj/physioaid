@@ -9,6 +9,10 @@ import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
 import { getDemoMotionMetrics } from "@/lib/sensors/motion-summary";
+import {
+  DEFAULT_HEIGHT_METERS,
+  estimateStepLengthMeters,
+} from "@/lib/sensors/step-detection";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
 import type { MotionSupportStatus } from "@/types/motion";
 
@@ -60,6 +64,10 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
     startGaitCountdown,
   } = flow;
   const [motionStatus, setMotionStatus] = useState<MotionSupportStatus>();
+  const [heightCm, setHeightCm] = useState(
+    Math.round(DEFAULT_HEIGHT_METERS * 100),
+  );
+  const stepLengthMeters = estimateStepLengthMeters(heightCm / 100);
 
   if (gaitPhase === "demo") {
     return <GaitWalkDemo onContinue={() => setGaitPhase("start")} />;
@@ -68,6 +76,10 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
   if (gaitPhase === "start") {
     return (
       <TestStartPanel
+        autoStopDistance={{
+          targetMeters: gaitDistanceMeters,
+          stepLengthMeters,
+        }}
         countdownCueWord="go"
         fallbackActions={[
           {
@@ -117,6 +129,12 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
         <DistanceSelector
           onChange={setGaitDistanceMeters}
           value={gaitDistanceMeters}
+        />
+        <TextField
+          label="Height in cm (used to estimate step length for auto-stop)"
+          onChange={(value) => setHeightCm(Number(value))}
+          type="number"
+          value={String(heightCm)}
         />
       </TestStartPanel>
     );
