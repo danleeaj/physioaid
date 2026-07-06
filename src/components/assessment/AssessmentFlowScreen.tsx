@@ -1,29 +1,25 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, X } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
-import { ChairStandScreen } from "@/components/assessment/screens/ChairStandScreen";
-import { ConsentScreen } from "@/components/assessment/screens/ConsentScreen";
-import { ContactScreen } from "@/components/assessment/screens/ContactScreen";
-import { FloorRisingScreen } from "@/components/assessment/screens/FloorRisingScreen";
-import { GaitScreen } from "@/components/assessment/screens/GaitScreen";
-import { QuestionnaireScreen } from "@/components/assessment/screens/QuestionnaireScreen";
-import { SafetyScreen } from "@/components/assessment/screens/SafetyScreen";
+import { ArrowRight, Check, Dumbbell } from "lucide-react";
+import { AssessmentHubScreen } from "@/components/assessment/AssessmentHubScreen";
+import { PrecheckScreen } from "@/components/assessment/PrecheckScreen";
+import { TestScreen } from "@/components/assessment/TestScreen";
 import { useAssessmentFlow } from "@/components/assessment/useAssessmentFlow";
+import { useUserProfile } from "@/components/auth/UserProfileProvider";
+import { useMovementLog } from "@/components/community/useMovementLog";
 import { AssessmentResultScreen } from "@/components/dashboard/AssessmentResultScreen";
-import type { AssessmentSession } from "@/types/assessment";
-import { ConfirmDialog } from "@/components/layout/ConfirmDialog";
+import type { HistorySession } from "@/components/dashboard/history-store";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { TopBar } from "@/components/layout/TopBar";
 import { shellCopy } from "@/components/layout/copy";
-import { LangSwitch } from "@/components/i18n/LangSwitch";
-import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { toLocalDateKey } from "@/lib/movement-log";
+import type { AssessmentSession, TestId } from "@/types/assessment";
 
 /**
- * Guided Assessment Flow — the existing safety-gated step machine
- * (consent → safety → contact → confidence → chair stand → gait → floor
- * rising → result) rendered one focused screen at a time inside the app
- * shell. All step screens, gates and scoring are the pre-existing logic.
+ * Assessment hub flow — a card hub replaces the old linear step machine.
+ * Participants open the pre-check, each test, or the exercise card in any
+ * order; progress lives in a persistent per-identity draft. External props
+ * are unchanged, so AppShell's `{name:"flow"}` simply opens the hub.
  */
 export function AssessmentFlowScreen({
   demoMode,
@@ -36,60 +32,30 @@ export function AssessmentFlowScreen({
   onSaved: (session: AssessmentSession) => void;
   onViewResources: () => void;
 }) {
-  const flow = useAssessmentFlow({ initialStep: "consent" });
+  const { uid } = useUserProfile();
+  // Draft namespace: signed-in users get their own draft; demo mode shares
+  // the "demo" namespace (the flow is only reachable when signed in or demo).
+  const identity = uid ?? "demo";
+  const movementSession: HistorySession = uid
+    ? { kind: "firebase", uid }
+    : { kind: "demo" };
+  const { logs, logActivity } = useMovementLog(movementSession);
+  const todayKey = toLocalDateKey(new Date().toISOString());
+  const exerciseDoneToday = logs.some(
+    (log) =>
+      log.source === "exercise" && toLocalDateKey(log.completedAt) === todayKey,
+  );
+  const flow = useAssessmentFlow({ identity, demoMode, exerciseDoneToday });
   const { t } = useLanguage();
-  const reducedMotion = useReducedMotion();
-  const [confirmExit, setConfirmExit] = useState(false);
 
-  const {
-    steps,
-    stepIndex,
-    currentStep,
-    questionIndex,
-    currentPhysicalPhase,
-    isPhysicalDemoScreen,
-    blockedBySafety,
-    demoLoaded,
-    next,
-    back,
-    loadDemo,
-  } = flow;
-
-  const isResult = currentStep === "dashboard";
-  const firstStepIndex = steps.indexOf("consent");
-  const atFirstScreen = stepIndex === firstStepIndex;
-  // Landing and result are excluded from the "Step X of Y" count (unchanged).
-  const totalProgressSteps = steps.length - 2;
-  const screenKey = `${currentStep}-${questionIndex}-${currentPhysicalPhase ?? ""}`;
-  const hasAnswers = flow.consent.assessmentConsent || stepIndex > firstStepIndex;
-
-  const nextLabel =
-    currentStep === "safety" && blockedBySafety
-      ? t("nav.goToSummary")
-      : isPhysicalDemoScreen
-        ? t("nav.continueAbove")
-        : t("nav.next");
-
-  function requestExit() {
-    if (hasAnswers) {
-      setConfirmExit(true);
-    } else {
-      onExit();
-    }
-  }
-
-  function handleBack() {
-    if (atFirstScreen) {
-      requestExit();
-    } else {
-      back();
-    }
-  }
-
-  if (isResult) {
+  if (flow.view === "result") {
     return (
       <>
-        <TopBar backLabel={t("nav.back")} onBack={onExit} title={shellCopy.result.title} />
+        <TopBar
+          backLabel={t("nav.back")}
+          onBack={flow.returnToHub}
+          title={shellCopy.result.title}
+        />
         <AssessmentResultScreen
           demoMode={demoMode}
           flow={flow}
@@ -101,130 +67,93 @@ export function AssessmentFlowScreen({
     );
   }
 
+  if (flow.view === "precheck") {
+    return <PrecheckScreen flow={flow} onClose={flow.returnToHub} />;
+  }
+
+  if (flow.view.startsWith("test:")) {
+    const testId = flow.view.slice("test:".length) as TestId;
+    return <TestScreen flow={flow} onBack={flow.returnToHub} testId={testId} />;
+  }
+
+  if (flow.view === "exercise") {
+    return (
+      <ExerciseScreen
+        doneToday={exerciseDoneToday}
+        onBack={flow.returnToHub}
+        onMarkDone={() => {
+          void logActivity({
+            source: "exercise",
+            activityType: "chair_exercise",
+            title: "Guided exercise",
+            durationMinutes: null,
+          }).catch(() => {});
+        }}
+        onViewResources={onViewResources}
+      />
+    );
+  }
+
+  return <AssessmentHubScreen demoMode={demoMode} flow={flow} onExit={onExit} />;
+}
+
+/**
+ * Exercise card — guided videos in Resources. Practice, never assessment
+ * evidence: marking it done writes a movement activity log, not a test
+ * result.
+ */
+function ExerciseScreen({
+  doneToday,
+  onBack,
+  onMarkDone,
+  onViewResources,
+}: {
+  doneToday: boolean;
+  onBack: () => void;
+  onMarkDone: () => void;
+  onViewResources: () => void;
+}) {
+  const { t } = useLanguage();
+  const copy = shellCopy.hub;
+
   return (
     <div className="flex min-h-dvh flex-col">
-      <TopBar
-        backLabel={t("nav.back")}
-        onBack={handleBack}
-        right={
-          <button className="link-action shrink-0" onClick={requestExit} type="button">
-            <X aria-hidden size={18} />
-            {shellCopy.flow.exit}
-          </button>
-        }
-        title={t("progress.step", { current: stepIndex, total: totalProgressSteps })}
-      />
-      {/* Thin progress strip per the mobile flow contract */}
-      <div className="px-5 pt-3">
-        <div
-          aria-hidden
-          className="progress-track"
-          style={{ height: 4 }}
-        >
-          <div
-            className="progress-fill"
-            style={{ width: `${Math.round((stepIndex / totalProgressSteps) * 100)}%` }}
-          />
-        </div>
-      </div>
-      {/* Language switcher on its own scrollable row — four languages never fit the top bar */}
-      <div className="overflow-x-auto px-5 pt-3">
-        <LangSwitch />
-      </div>
-
+      <TopBar backLabel={t("nav.back")} onBack={onBack} title={copy.exerciseTitle} />
       <div className="app-content flex-1">
-        {/* Sample answers are opt-in — a new assessment always starts fresh */}
-        {demoMode && currentStep === "consent" && (
-          <div>
-            {demoLoaded ? (
-              <p
-                aria-live="polite"
-                className="text-[length:var(--text-label)] text-[var(--muted-strong)]"
-              >
-                {shellCopy.flow.sampleLoaded}
-              </p>
-            ) : (
-              <button className="link-action" onClick={loadDemo} type="button">
-                {shellCopy.flow.loadSample}
-              </button>
-            )}
+        <section className="app-card app-card--hero grid gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--success-soft)] text-[var(--primary-dark)]">
+              <Dumbbell aria-hidden size={22} />
+            </span>
+            <h2 className="text-[length:var(--text-lead)] font-bold">
+              {copy.exerciseTitle}
+            </h2>
           </div>
-        )}
-        <AnimatePresence initial={false} mode="wait">
-          <motion.div
-            animate={reducedMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
-            exit={reducedMotion ? { opacity: 1 } : { opacity: 0, x: -24 }}
-            initial={reducedMotion ? { opacity: 1 } : { opacity: 0, x: 24 }}
-            key={screenKey}
-            transition={{ duration: 0.28, ease: "easeOut" }}
-          >
-            {currentStep === "consent" && (
-              <ConsentScreen
-                consent={flow.consent}
-                demographics={flow.demographics}
-                setConsent={flow.setConsent}
-                setDemographics={flow.setDemographics}
-              />
-            )}
-            {currentStep === "safety" && (
-              <SafetyScreen
-                blockedBySafety={blockedBySafety}
-                safety={flow.safety}
-                setSafety={flow.setSafety}
-              />
-            )}
-            {currentStep === "emergency_contact" && (
-              <ContactScreen
-                contact={flow.contact}
-                demographics={flow.demographics}
-                setContact={flow.setContact}
-                setDemographics={flow.setDemographics}
-              />
-            )}
-            {currentStep === "questionnaire" && (
-              <QuestionnaireScreen
-                questionIndex={questionIndex}
-                questionnaire={flow.questionnaire}
-                setQuestionnaire={flow.setQuestionnaire}
-              />
-            )}
-            {currentStep === "chair_stand" && <ChairStandScreen flow={flow} />}
-            {currentStep === "motion_gait" && <GaitScreen flow={flow} />}
-            {currentStep === "floor_rising" && <FloorRisingScreen flow={flow} />}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      <footer className="flow-footer">
-        <div className="flex items-center gap-3">
-          <button className="link-action shrink-0" onClick={handleBack} type="button">
-            <ArrowLeft aria-hidden size={18} />
-            {t("nav.back")}
-          </button>
+          <p className="text-[var(--muted)]">{copy.exerciseBody}</p>
           <button
-            className="primary-action w-full flex-1"
-            disabled={
-              isPhysicalDemoScreen ||
-              (currentStep === "consent" && !flow.consent.assessmentConsent)
-            }
-            onClick={next}
+            className="primary-action w-full"
+            onClick={onViewResources}
             type="button"
           >
-            {nextLabel} <ArrowRight aria-hidden size={22} />
+            {copy.exerciseOpenVideos}
+            <ArrowRight aria-hidden size={20} />
           </button>
-        </div>
-      </footer>
-
-      {confirmExit && (
-        <ConfirmDialog
-          body={shellCopy.flow.exitBody}
-          cancelLabel={shellCopy.flow.exitCancel}
-          confirmLabel={shellCopy.flow.exitConfirm}
-          onCancel={() => setConfirmExit(false)}
-          onConfirm={onExit}
-          title={shellCopy.flow.exitTitle}
-        />
-      )}
+          {doneToday ? (
+            <p className="flex items-center justify-center gap-2 font-semibold text-[var(--primary-dark)]">
+              <Check aria-hidden size={20} />
+              {copy.exerciseLoggedToday}
+            </p>
+          ) : (
+            <button
+              className="secondary-action w-full"
+              onClick={onMarkDone}
+              type="button"
+            >
+              {copy.exerciseMarkDone}
+            </button>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        env:
+          # Placeholder Firebase config so prerender succeeds; real values
+          # live in Vercel. Never used at runtime in CI.
+          NEXT_PUBLIC_FIREBASE_API_KEY: AIzaSyCI-placeholder-000000000000000000
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ci-placeholder.appspot.com
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+          NEXT_PUBLIC_FIREBASE_APP_ID: 1:000000000000:web:0000000000000000000000
+        run: npm run build
+
+      - name: Demo identity leak check
+        # Demo identity (Mr Tan, fake community people, Toa Payoh defaults)
+        # may only live in explicitly demo-gated modules. A match anywhere
+        # else means a real user could see fabricated data.
+        run: |
+          set -e
+          # Non-comment mentions only; demo-data modules and the two
+          # intentional, demo-labelled UI strings (sample-report banner,
+          # demo sign-in label) are allowlisted.
+          LEAKS=$(grep -rn "Mr Tan\|Mr Wong\|Auntie Lim\|Mrs Tan" src \
+            --include='*.ts' --include='*.tsx' \
+            | grep -v -E '^src/(lib/demo/|lib/demo-session\.ts|components/layout/copy\.ts|components/dashboard/demo-display-data\.ts|lib/i18n/messages\.ts)' \
+            | grep -v -E ':[0-9]+:\s*(\*|//|/\*)' \
+            | grep -v -E 'Sample report — Mr Tan|Mr Tan demo' \
+            || true)
+          if [ -n "$LEAKS" ]; then
+            echo "Demo identity found outside demo-gated modules:"
+            echo "$LEAKS"
+            exit 1
+          fi
+          echo "No demo identity leaks outside demo modules."

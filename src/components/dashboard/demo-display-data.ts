@@ -18,8 +18,8 @@ export type HistoryEntry = {
   /** Overall status in participant language. */
   overall: string;
   riskCategory: RiskCategory | null;
-  /** Average confidence, 0–10. */
-  confidence: number;
+  /** Average confidence, 0–10 — null when the questionnaire was not done. */
+  confidence: number | null;
   chairStandSeconds: number | null;
   gaitLabel: string;
   floorRiseLabel: string;
@@ -109,8 +109,10 @@ export function sessionToHistoryEntry(session: AssessmentSession): HistoryEntry 
       ? riskLabel(session.analytics.riskCategory)
       : "Check recorded",
     riskCategory: session.analytics?.riskCategory ?? null,
-    confidence: Number(session.questionnaire.averageScore.toFixed(1)),
-    chairStandSeconds: session.chairStand.durationSeconds ?? null,
+    confidence: session.questionnaire
+      ? Number(session.questionnaire.averageScore.toFixed(1))
+      : null,
+    chairStandSeconds: session.chairStand?.durationSeconds ?? null,
     gaitLabel: gaitOk ? "Stable with caution" : "Needs support",
     floorRiseLabel:
       floorStatus === "skipped"

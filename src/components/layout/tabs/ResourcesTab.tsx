@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { demoPerson } from "@/components/dashboard/demo-display-data";
+import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { shellCopy } from "@/components/layout/copy";
 import type { RiskCategory } from "@/types/assessment";
 
@@ -109,15 +109,21 @@ export function ResourcesTab({
   /** Coarse risk band from the latest history entry — the only profile hint sent to the API. */
   latestRisk?: RiskCategory | null;
 }) {
+  const { isDemo, profile } = useUserProfile();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
   const [suggestionsFailed, setSuggestionsFailed] = useState(false);
+
+  // Demo keeps the Toa Payoh story; real users only ever send their own
+  // planning area — or none at all (the API handles a missing area).
+  const area = isDemo ? "Toa Payoh" : (profile?.planningArea ?? null);
 
   // Fetch AI/curated activity suggestions when the Nearby segment is open.
   useEffect(() => {
     if (segment !== "nearby" || suggestions || suggestionsFailed) return;
     let cancelled = false;
-    const params = new URLSearchParams({ area: demoPerson.location });
+    const params = new URLSearchParams();
+    if (area) params.set("area", area);
     if (latestRisk) params.set("risk", latestRisk);
     fetch(`/api/recommend-activities?${params.toString()}`)
       .then((response) => (response.ok ? response.json() : null))
@@ -138,7 +144,7 @@ export function ResourcesTab({
     return () => {
       cancelled = true;
     };
-  }, [segment, suggestions, suggestionsFailed, latestRisk]);
+  }, [segment, suggestions, suggestionsFailed, latestRisk, area]);
 
   const visible = cards.filter(
     (card) =>

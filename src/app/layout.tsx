@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Sans_SC, Noto_Sans_Tamil } from "next/font/google";
 import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { UserProfileProvider } from "@/components/auth/UserProfileProvider";
 import "./globals.css";
 
 const notoSansSC = Noto_Sans_SC({
@@ -63,7 +64,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
-          <LanguageProvider>{children}</LanguageProvider>
+          <UserProfileProvider>
+            <LanguageProvider>{children}</LanguageProvider>
+          </UserProfileProvider>
         </AuthProvider>
       </body>
     </html>

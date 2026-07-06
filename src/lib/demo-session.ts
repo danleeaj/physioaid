@@ -8,7 +8,27 @@ import {
 } from "@/lib/vision/chair-stand";
 import type { AssessmentSession } from "@/types/assessment";
 
-export function createDemoSession(): AssessmentSession {
+/**
+ * The demo session always carries every field — its metrics are legitimate
+ * demo content keyed by the explicit `demo-mr-tan` id (never stripped by
+ * `normalizeSession`). The narrowed type lets consumers read demo fields
+ * without the optional-field guards real sessions require.
+ */
+export type DemoSession = AssessmentSession &
+  Required<
+    Pick<
+      AssessmentSession,
+      | "emergencyContact"
+      | "demographics"
+      | "questionnaire"
+      | "chairStand"
+      | "motion"
+      | "floorRising"
+      | "vision"
+    >
+  >;
+
+export function createDemoSession(): DemoSession {
   const now = new Date().toISOString();
   const questionnaire = scoreFallsEfficacy({
     balanceConfidence: 5,
@@ -19,7 +39,9 @@ export function createDemoSession(): AssessmentSession {
 
   return {
     id: "demo-mr-tan",
+    schemaVersion: 2,
     createdAt: now,
+    completedAt: now,
     consent: {
       assessmentConsent: true,
       researchConsent: false,

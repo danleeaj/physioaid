@@ -6,9 +6,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { getMessage, type MessageKey } from "@/lib/i18n/messages";
 import {
   isLanguage,
@@ -41,6 +43,8 @@ function pickVoice(locale: string): SpeechSynthesisVoice | undefined {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>("en");
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const { sessionKind, uid, profile, profileLoading, updateProfile } =
+    useUserProfile();
 
   // Read the persisted choice after hydration; SSR always renders English.
   useEffect(() => {
@@ -52,6 +56,41 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Once a firebase/demo profile resolves, the profile's language is
+  // authoritative — this effect is declared after the localStorage-read
+  // effect above so it wins when both fire in the same commit (demo, whose
+  // profile is available synchronously). Ref-guarded to run once per uid
+  // (once for demo) so it never fights a change made later in this session.
+  // Keyed on the scalar `preferredLanguage`, not the profile object, which
+  // gets a new identity on every updateProfile.
+  const appliedProfileLangRef = useRef<string | null>(null);
+  const profilePreferredLanguage = profile?.preferredLanguage ?? null;
+
+  const applyProfileLanguage = useCallback((next: Language) => {
+    setLangState(next);
+    document.documentElement.lang = next;
+    try {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, next);
+    } catch {
+      // Preference stays for this session only.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (sessionKind === "firebase") {
+      if (profileLoading || !uid || profilePreferredLanguage === null) return;
+      const key = `firebase:${uid}`;
+      if (appliedProfileLangRef.current === key) return;
+      appliedProfileLangRef.current = key;
+      applyProfileLanguage(profilePreferredLanguage);
+    } else if (sessionKind === "demo") {
+      if (profilePreferredLanguage === null) return;
+      if (appliedProfileLangRef.current === "demo") return;
+      appliedProfileLangRef.current = "demo";
+      applyProfileLanguage(profilePreferredLanguage);
+    }
+  }, [sessionKind, uid, profileLoading, profilePreferredLanguage, applyProfileLanguage]);
+
   useEffect(() => {
     return () => {
       if ("speechSynthesis" in window) {
@@ -60,15 +99,24 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const setLang = useCallback((next: Language) => {
-    setLangState(next);
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, next);
-    document.documentElement.lang = next;
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
-  }, []);
+  const setLang = useCallback(
+    (next: Language) => {
+      setLangState(next);
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, next);
+      document.documentElement.lang = next;
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+      }
+      if (sessionKind === "firebase" || sessionKind === "demo") {
+        // Fire-and-forget — localStorage above is already the source of
+        // truth for this device; the profile write keeps other
+        // devices/tabs and the onboarding-seeded doc in sync.
+        void updateProfile({ preferredLanguage: next }).catch(() => {});
+      }
+    },
+    [sessionKind, updateProfile],
+  );
 
   const t = useCallback(
     (key: MessageKey, vars?: Record<string, string | number>) =>

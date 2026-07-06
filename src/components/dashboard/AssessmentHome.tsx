@@ -8,11 +8,11 @@ import {
   Footprints,
   UserRound,
 } from "lucide-react";
+import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { shellCopy } from "@/components/layout/copy";
-import {
-  demoPerson,
-  type HistoryEntry,
-} from "@/components/dashboard/demo-display-data";
+import type { HistoryEntry } from "@/components/dashboard/demo-display-data";
+import { TrendSection } from "@/components/dashboard/TrendSection";
+import type { AssessmentSession } from "@/types/assessment";
 
 const copy = shellCopy.home;
 
@@ -26,6 +26,7 @@ function greeting(): string {
 /** Assessment tab home — compact health dashboard, not a marketing page. */
 export function AssessmentHome({
   entries,
+  sessions,
   onStartAssessment,
   onOpenExercise,
   onViewHistory,
@@ -33,20 +34,25 @@ export function AssessmentHome({
   onOpenProfile,
 }: {
   entries: HistoryEntry[];
+  /** Normalized non-demo sessions (from useHistoryStore) for the trend dashboard. */
+  sessions: AssessmentSession[];
   onStartAssessment: () => void;
   onOpenExercise: () => void;
   onViewHistory: () => void;
   onViewHistoryDetail: (entryId: string) => void;
   onOpenProfile: () => void;
 }) {
+  const { profile } = useUserProfile();
   const lastResult = entries[0];
   const preview = entries.slice(0, 3);
+  // Neutral greeting when the profile has no name yet — never a demo persona.
+  const displayName = profile?.displayName.trim() ?? "";
 
   return (
     <>
       <header className="top-bar justify-between">
         <h1 className="top-bar__title">
-          {greeting()}, {demoPerson.name}
+          {displayName ? `${greeting()}, ${displayName}` : greeting()}
         </h1>
         <button
           aria-label="Open profile and settings"
@@ -101,7 +107,11 @@ export function AssessmentHome({
             <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[length:var(--text-label)]">
               <div>
                 <dt className="text-[var(--muted)]">Confidence</dt>
-                <dd className="font-bold">{lastResult.confidence}/10</dd>
+                <dd className="font-bold">
+                  {lastResult.confidence != null
+                    ? `${lastResult.confidence}/10`
+                    : "—"}
+                </dd>
               </div>
               <div>
                 <dt className="text-[var(--muted)]">Chair stand</dt>
@@ -118,6 +128,9 @@ export function AssessmentHome({
             </dl>
           </section>
         )}
+
+        {/* Trends over the two most recent checks */}
+        <TrendSection sessions={sessions} />
 
         {/* Recommended next step */}
         <section className="app-card grid gap-3">
@@ -169,7 +182,8 @@ export function AssessmentHome({
                 </p>
                 <p className="truncate font-bold">{entry.overall}</p>
                 <p className="text-[length:var(--text-label)] text-[var(--muted)]">
-                  Confidence {entry.confidence}/10
+                  Confidence{" "}
+                  {entry.confidence != null ? `${entry.confidence}/10` : "—"}
                 </p>
               </div>
               <ChevronRight aria-hidden className="shrink-0 text-[var(--muted)]" size={20} />

@@ -93,7 +93,12 @@ export function HistoryScreen({
             <p className="text-[length:var(--text-body)] font-bold">{entry.overall}</p>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-[length:var(--text-label)]">
               {(filter === "all" || filter === "confidence") && (
-                <Metric label="Confidence" value={`${entry.confidence}/10`} />
+                <Metric
+                  label="Confidence"
+                  value={
+                    entry.confidence != null ? `${entry.confidence}/10` : "—"
+                  }
+                />
               )}
               {(filter === "all" || filter === "chairStand") && (
                 <Metric

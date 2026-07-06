@@ -26,10 +26,15 @@ export function HistoryDetailScreen({
     if (session) {
       const id = saveSessionForReport(session);
       router.push(`/report/${id}`);
+    } else if (entry.sample) {
+      // Sample entries have no stored session — open the explicit demo
+      // report, which renders with its visible sample-data banner.
+      router.push("/report/demo");
     } else {
-      // Sample entries have no stored session — the report route's demo
-      // fallback renders with its visible "Demo data" pill.
-      router.push("/report/sample");
+      // A real entry whose session payload failed to load (e.g. corrupted
+      // local record) must never open the demo report — resolve by id so
+      // signed-in users get the Firestore copy or an honest not-found.
+      router.push(`/report/${entry.id}`);
     }
   }
 
@@ -56,7 +61,9 @@ export function HistoryDetailScreen({
             <p className="text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
               Confidence
             </p>
-            <p className="mt-1 text-xl font-bold leading-tight">{entry.confidence}/10</p>
+            <p className="mt-1 text-xl font-bold leading-tight">
+              {entry.confidence != null ? `${entry.confidence}/10` : "—"}
+            </p>
           </div>
           <div className="stat-tile">
             <p className="text-[length:var(--text-caption)] font-bold text-[var(--muted)]">

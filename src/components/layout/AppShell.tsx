@@ -3,17 +3,17 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { AssessmentFlowScreen } from "@/components/assessment/AssessmentFlowScreen";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { AssessmentHome } from "@/components/dashboard/AssessmentHome";
 import { CarePartnerScreen } from "@/components/dashboard/CarePartnerScreen";
 import { HistoryDetailScreen } from "@/components/dashboard/HistoryDetailScreen";
 import { HistoryScreen } from "@/components/dashboard/HistoryScreen";
 import { PrivacyConsentScreen } from "@/components/dashboard/PrivacyConsentScreen";
-import {
-  ProfileScreen,
-  loadTextSizePreference,
-} from "@/components/dashboard/ProfileScreen";
+import { ProfileScreen } from "@/components/dashboard/ProfileScreen";
 import { useHistoryStore } from "@/components/dashboard/history-store";
-import { markPracticedToday } from "@/lib/streak";
+import { loadTextSizePreference } from "@/lib/preferences";
+import { recordMovementActivity } from "@/lib/movement-log";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { SignInScreen } from "@/components/layout/SignInScreen";
 import { TabBar, type ShellTab } from "@/components/layout/TabBar";
 import { CommunityTab } from "@/components/layout/tabs/CommunityTab";
@@ -21,8 +21,6 @@ import {
   ResourcesTab,
   type ResourceSegment,
 } from "@/components/layout/tabs/ResourcesTab";
-
-const SESSION_KEY = "physioaid.session";
 
 const emptySubscribe = () => () => {};
 
@@ -41,6 +39,15 @@ type Screen =
  */
 export function AppShell() {
   const { user, loading, signOut } = useAuth();
+  const {
+    sessionKind,
+    isDemo,
+    uid,
+    startDemo,
+    endDemo,
+    profileLoading,
+    onboardingStatus,
+  } = useUserProfile();
   // false during SSR/hydration, true on the client afterwards — keeps the
   // server HTML (splash) and first client paint identical.
   const hydrated = useSyncExternalStore(
@@ -48,29 +55,27 @@ export function AppShell() {
     () => true,
     () => false,
   );
-  const [demoSession, setDemoSession] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.localStorage.getItem(SESSION_KEY) === "demo",
-  );
   const [tab, setTab] = useState<ShellTab>("assessment");
   const [stack, setStack] = useState<Screen[]>([]);
   const [resourcesSegment, setResourcesSegment] =
     useState<ResourceSegment>("nearby");
   // Care Partner Access is reachable from the signed-out Sign In screen too.
   const [signedOutCarePartner, setSignedOutCarePartner] = useState(false);
-  const historySession = user
-    ? ({ kind: "firebase", uid: user.uid } as const)
-    : demoSession
-      ? ({ kind: "demo" } as const)
-      : null;
-  const { entries, addSession, getSession } = useHistoryStore(historySession);
+  // sessionKind already gives Firebase precedence over a leftover demo marker.
+  const historySession =
+    sessionKind === "firebase" && uid
+      ? ({ kind: "firebase", uid } as const)
+      : sessionKind === "demo"
+        ? ({ kind: "demo" } as const)
+        : null;
+  const { entries, sessions, addSession, getSession } =
+    useHistoryStore(historySession);
 
   useEffect(() => {
     loadTextSizePreference();
   }, []);
 
-  const signedIn = Boolean(user) || demoSession;
+  const signedIn = sessionKind !== "signedOut";
   const screen = stack[stack.length - 1];
 
   function push(next: Screen) {
@@ -86,23 +91,13 @@ export function AppShell() {
     setTab(nextTab);
   }
 
-  function startDemo() {
-    try {
-      window.localStorage.setItem(SESSION_KEY, "demo");
-    } catch {
-      // Session stays in memory only.
-    }
-    setDemoSession(true);
+  function handleStartDemo() {
+    startDemo();
     resetToTab("assessment");
   }
 
   function handleSignOut() {
-    try {
-      window.localStorage.removeItem(SESSION_KEY);
-    } catch {
-      // Nothing to clear.
-    }
-    setDemoSession(false);
+    endDemo();
     setStack([]);
     setTab("assessment");
     if (user) {
@@ -115,8 +110,14 @@ export function AppShell() {
     resetToTab("resources");
   }
 
-  // Neutral splash while Firebase restores the session — avoids a Sign In flash.
-  if (!hydrated || loading) {
+  // Neutral splash while Firebase restores the session or the profile doc
+  // resolves — avoids flashing Sign In, the app, or onboarding prematurely.
+  if (
+    !hydrated ||
+    loading ||
+    (sessionKind === "firebase" &&
+      (profileLoading || onboardingStatus === "unknown"))
+  ) {
     return (
       <div className="app-viewport">
         <main aria-busy="true" className="app-shell" />
@@ -133,9 +134,22 @@ export function AppShell() {
           ) : (
             <SignInScreen
               onCarePartner={() => setSignedOutCarePartner(true)}
-              onDemo={startDemo}
+              onDemo={handleStartDemo}
             />
           )}
+        </main>
+      </div>
+    );
+  }
+
+  // Onboarding gate: signed-in Firebase accounts must finish profile setup
+  // before the app renders. Demo mode never lands here (demoProfile is
+  // onboarding-complete) and the splash above holds until status resolves.
+  if (sessionKind === "firebase" && onboardingStatus !== "complete") {
+    return (
+      <div className="app-viewport">
+        <main className="app-shell">
+          <OnboardingFlow />
         </main>
       </div>
     );
@@ -146,12 +160,25 @@ export function AppShell() {
       <main className="app-shell">
         {screen?.name === "flow" && (
           <AssessmentFlowScreen
-            demoMode={demoSession && !user}
+            demoMode={isDemo}
             onExit={() => resetToTab("assessment")}
             onSaved={(session) => {
               addSession(session);
               // Completing a check counts toward the weekly movement goal.
-              markPracticedToday();
+              // historySession is non-null here — the flow only renders
+              // while signed in (demo or firebase).
+              if (historySession) {
+                void recordMovementActivity(historySession, {
+                  source: "assessment",
+                  activityType: "mobility_check",
+                  title: "Mobility check",
+                  durationMinutes: null,
+                  assessmentSessionId: session.id,
+                }).catch(() => {
+                  // Local copy already written inside recordMovementActivity;
+                  // nothing further to do if the remote sync fails.
+                });
+              }
               resetToTab("assessment");
             }}
             onViewResources={() => openResources("videos")}
@@ -198,6 +225,7 @@ export function AppShell() {
             {tab === "assessment" && (
               <AssessmentHome
                 entries={entries}
+                sessions={sessions}
                 onOpenExercise={() => openResources("videos")}
                 onOpenProfile={() => push({ name: "profile" })}
                 onStartAssessment={() => push({ name: "flow" })}
