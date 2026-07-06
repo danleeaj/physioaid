@@ -115,9 +115,10 @@ export function SignInScreen({
         {copy.continueEmail}
         <ComingSoonPill />
       </button>
-      <button className="secondary-action w-full" onClick={onCarePartner} type="button">
+      <button className="secondary-action w-full" onClick={() => setStubNote(true)} type="button">
         <HeartHandshake aria-hidden size={22} />
         {copy.carePartner}
+        <ComingSoonPill />
       </button>
       <button className="secondary-action w-full" onClick={onDemo} type="button">
         <UserRound aria-hidden size={22} />
