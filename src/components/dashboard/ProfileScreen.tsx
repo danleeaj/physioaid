@@ -6,9 +6,10 @@ import {
   HeartHandshake,
   LogOut,
   ShieldCheck,
+  UserRound,
 } from "lucide-react";
 import { useState } from "react";
-import { demoPerson } from "@/components/dashboard/demo-display-data";
+import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { shellCopy } from "@/components/layout/copy";
 import { TopBar } from "@/components/layout/TopBar";
 import { LangSwitch } from "@/components/i18n/LangSwitch";
@@ -38,7 +39,7 @@ export function loadTextSizePreference() {
   }
 }
 
-/** Profile secondary screen — demo identity, display settings, sign out. */
+/** Profile secondary screen — session identity, display settings, sign out. */
 export function ProfileScreen({
   onBack,
   onOpenCarePartner,
@@ -50,6 +51,7 @@ export function ProfileScreen({
   onOpenPrivacy: () => void;
   onSignOut: () => void;
 }) {
+  const { profile } = useUserProfile();
   const [textSize, setTextSize] = useState<TextSize>(() => {
     if (typeof window === "undefined") return "standard";
     const stored = window.localStorage.getItem(TEXT_SIZE_KEY) as TextSize | null;
@@ -67,6 +69,18 @@ export function ProfileScreen({
     }
   }
 
+  // Identity comes from the active profile — neutral treatment when the
+  // profile has no name yet (fresh Firebase accounts), never a demo persona.
+  const displayName = profile?.displayName.trim() ?? "";
+  const initials = displayName
+    .split(" ")
+    .map((part) => part[0])
+    .join("");
+  const identityMeta = [
+    profile?.ageGroup ? `Age group: ${profile.ageGroup}` : null,
+    profile?.planningArea ?? null,
+  ].filter((segment): segment is string => segment !== null);
+
   return (
     <>
       <TopBar onBack={onBack} title={shellCopy.profile.title} />
@@ -74,16 +88,17 @@ export function ProfileScreen({
         {/* Identity */}
         <section className="app-card app-card--hero flex items-center gap-3">
           <span aria-hidden className="avatar-dot h-14 w-14 text-lg">
-            {demoPerson.name
-              .split(" ")
-              .map((part) => part[0])
-              .join("")}
+            {initials || <UserRound aria-hidden size={24} />}
           </span>
           <div>
-            <p className="text-[length:var(--text-lead)] font-bold">{demoPerson.name}</p>
-            <p className="text-[length:var(--text-label)] text-[var(--muted)]">
-              Age group: {demoPerson.ageGroup} · {demoPerson.location}
+            <p className="text-[length:var(--text-lead)] font-bold">
+              {displayName || "Your profile"}
             </p>
+            {identityMeta.length > 0 && (
+              <p className="text-[length:var(--text-label)] text-[var(--muted)]">
+                {identityMeta.join(" · ")}
+              </p>
+            )}
           </div>
         </section>
 
@@ -118,7 +133,7 @@ export function ProfileScreen({
           <span className="min-w-0 flex-1">
             <span className="block font-bold">Care partner</span>
             <span className="block text-[length:var(--text-label)] text-[var(--muted)]">
-              {demoPerson.carePartner}
+              {profile?.supportContact?.name ?? "Not connected"}
             </span>
           </span>
           <ChevronRight aria-hidden className="shrink-0 text-[var(--muted)]" size={20} />

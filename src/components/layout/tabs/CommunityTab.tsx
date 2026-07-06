@@ -2,6 +2,7 @@
 
 import { Heart, MapPin, MessageCircle } from "lucide-react";
 import { useState } from "react";
+import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { shellCopy } from "@/components/layout/copy";
 import { activeDaysThisWeek, loadPracticeLog } from "@/lib/streak";
 
@@ -81,6 +82,9 @@ function daysLeftThisWeek(): number {
 
 /** Gentle neighbourhood community feed for older adults — encouragement, not competition. */
 export function CommunityTab() {
+  // Interim gate (Goal 7 replaces this with a real opt-in feed): the sample
+  // feed is demo-story content and must never render for real users.
+  const { isDemo } = useUserProfile();
   const [kudos, setKudos] = useState<Record<string, boolean>>({});
   const [segment, setSegment] = useState<FeedSegment>("nearby");
   // Real device-local movement log (lazy init; [] on the server render).
@@ -126,58 +130,68 @@ export function CommunityTab() {
           </div>
         </section>
 
-        {/* Segments */}
-        <div className="segmented" role="group" aria-label="Feed filter">
-          {segments.map((item) => (
-            <button
-              aria-pressed={segment === item.id}
-              key={item.id}
-              onClick={() => setSegment(item.id)}
-              type="button"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+        {/* Real users: honest placeholder until the opted-in feed exists (Goal 7). */}
+        {!isDemo && (
+          <p className="app-card text-[length:var(--text-label)] text-[var(--muted)]">
+            Community sharing is coming — your movement stays private.
+          </p>
+        )}
 
-        {/* Neighbourhood feed */}
-        {visible.map((item) => (
-          <article className="feed-card grid gap-3 border border-[var(--card-border)]" key={item.id}>
-            <div className="flex items-center gap-3">
-              <span aria-hidden className="avatar-dot">
-                {item.initials}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-bold">
-                  {item.name} {item.activity}
-                </p>
-                <p className="flex flex-wrap items-center gap-x-2 text-[length:var(--text-label)] text-[var(--muted)]">
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin aria-hidden size={14} />
-                    {item.neighbourhood}
-                  </span>
-                  · {item.time} · {item.metric}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
+        {/* Segments — demo-only, like the sample feed they filter */}
+        {isDemo && (
+          <div className="segmented" role="group" aria-label="Feed filter">
+            {segments.map((item) => (
               <button
-                aria-pressed={Boolean(kudos[item.id])}
-                className="cheer-button"
-                data-cheered={kudos[item.id] ? "true" : undefined}
-                onClick={() => toggleKudos(item.id)}
+                aria-pressed={segment === item.id}
+                key={item.id}
+                onClick={() => setSegment(item.id)}
                 type="button"
               >
-                <Heart aria-hidden size={16} />
-                {kudos[item.id] ? "Cheered" : "Cheer"}
+                {item.label}
               </button>
-              <button className="link-action" type="button">
-                <MessageCircle aria-hidden size={16} />
-                Comment
-              </button>
-            </div>
-          </article>
-        ))}
+            ))}
+          </div>
+        )}
+
+        {/* Neighbourhood feed — demo sample data only */}
+        {isDemo &&
+          visible.map((item) => (
+            <article className="feed-card grid gap-3 border border-[var(--card-border)]" key={item.id}>
+              <div className="flex items-center gap-3">
+                <span aria-hidden className="avatar-dot">
+                  {item.initials}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold">
+                    {item.name} {item.activity}
+                  </p>
+                  <p className="flex flex-wrap items-center gap-x-2 text-[length:var(--text-label)] text-[var(--muted)]">
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin aria-hidden size={14} />
+                      {item.neighbourhood}
+                    </span>
+                    · {item.time} · {item.metric}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  aria-pressed={Boolean(kudos[item.id])}
+                  className="cheer-button"
+                  data-cheered={kudos[item.id] ? "true" : undefined}
+                  onClick={() => toggleKudos(item.id)}
+                  type="button"
+                >
+                  <Heart aria-hidden size={16} />
+                  {kudos[item.id] ? "Cheered" : "Cheer"}
+                </button>
+                <button className="link-action" type="button">
+                  <MessageCircle aria-hidden size={16} />
+                  Comment
+                </button>
+              </div>
+            </article>
+          ))}
       </div>
     </>
   );

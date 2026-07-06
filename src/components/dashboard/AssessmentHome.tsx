@@ -8,11 +8,9 @@ import {
   Footprints,
   UserRound,
 } from "lucide-react";
+import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { shellCopy } from "@/components/layout/copy";
-import {
-  demoPerson,
-  type HistoryEntry,
-} from "@/components/dashboard/demo-display-data";
+import type { HistoryEntry } from "@/components/dashboard/demo-display-data";
 
 const copy = shellCopy.home;
 
@@ -39,14 +37,17 @@ export function AssessmentHome({
   onViewHistoryDetail: (entryId: string) => void;
   onOpenProfile: () => void;
 }) {
+  const { profile } = useUserProfile();
   const lastResult = entries[0];
   const preview = entries.slice(0, 3);
+  // Neutral greeting when the profile has no name yet — never a demo persona.
+  const displayName = profile?.displayName.trim() ?? "";
 
   return (
     <>
       <header className="top-bar justify-between">
         <h1 className="top-bar__title">
-          {greeting()}, {demoPerson.name}
+          {displayName ? `${greeting()}, ${displayName}` : greeting()}
         </h1>
         <button
           aria-label="Open profile and settings"

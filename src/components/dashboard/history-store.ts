@@ -9,21 +9,51 @@ import {
 import { getAssessmentHistory } from "@/lib/assessment-history";
 import type { AssessmentSession } from "@/types/assessment";
 
-const STORAGE_KEY = "physioaid.history";
+const LEGACY_STORAGE_KEY = "physioaid.history";
+const DEMO_STORAGE_KEY = "physioaid.history.demo";
 
 export type HistorySession =
   | { kind: "demo" }
   | { kind: "firebase"; uid: string };
+
+/**
+ * Local history is namespaced per session so accounts sharing a device never
+ * see each other's saves: `physioaid.history.demo` / `physioaid.history.<uid>`.
+ */
+function storageKeyFor(session: HistorySession | null): string | null {
+  if (!session) return null;
+  return session.kind === "demo"
+    ? DEMO_STORAGE_KEY
+    : `physioaid.history.${session.uid}`;
+}
+
+/**
+ * One-time migration of the old shared `physioaid.history` key, demo mode
+ * only. Firebase users deliberately ignore the legacy key: their saves also
+ * went to Firestore, which is authoritative — a small local-only loss beats
+ * adopting another person's records on a shared device.
+ */
+function migrateLegacyDemoHistory() {
+  try {
+    const legacy = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacy !== null && window.localStorage.getItem(DEMO_STORAGE_KEY) === null) {
+      window.localStorage.setItem(DEMO_STORAGE_KEY, legacy);
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
+  } catch {
+    // Storage unavailable — nothing to migrate.
+  }
+}
 
 type SavedRecord = {
   entry: HistoryEntry;
   session?: AssessmentSession;
 };
 
-function loadStoredRecords(): SavedRecord[] {
+function loadStoredRecords(storageKey: string): SavedRecord[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -40,9 +70,9 @@ function loadStoredRecords(): SavedRecord[] {
   }
 }
 
-function persistRecords(records: SavedRecord[]) {
+function persistRecords(storageKey: string, records: SavedRecord[]) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    window.localStorage.setItem(storageKey, JSON.stringify(records));
   } catch {
     // Storage may be unavailable (private mode) — history stays in memory.
   }
@@ -58,9 +88,13 @@ function persistRecords(records: SavedRecord[]) {
  * report stays reachable from history.
  */
 export function useHistoryStore(session: HistorySession | null) {
-  const [savedRecords, setSavedRecords] = useState<SavedRecord[]>(
-    loadStoredRecords,
-  );
+  const storageKey = storageKeyFor(session);
+  // Keyed by storage key so a session change (sign-out/sign-in, demo start)
+  // never shows another session's records — stale data is ignored below.
+  const [local, setLocal] = useState<{
+    key: string;
+    records: SavedRecord[];
+  } | null>(null);
   // Keyed by uid so a sign-out/sign-in never shows another account's cache —
   // no reset-in-effect needed, stale data is simply ignored below.
   const [remote, setRemote] = useState<{
@@ -69,6 +103,16 @@ export function useHistoryStore(session: HistorySession | null) {
   } | null>(null);
 
   const uid = session?.kind === "firebase" ? session.uid : null;
+
+  useEffect(() => {
+    if (!storageKey) return;
+    if (storageKey === DEMO_STORAGE_KEY) migrateLegacyDemoHistory();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration / session-change sync from localStorage
+    setLocal({ key: storageKey, records: loadStoredRecords(storageKey) });
+  }, [storageKey]);
+
+  const savedRecords =
+    local && local.key === storageKey ? local.records : [];
 
   useEffect(() => {
     if (!uid) return;
@@ -94,17 +138,27 @@ export function useHistoryStore(session: HistorySession | null) {
 
   const remoteRecords = remote && remote.uid === uid ? remote.records : [];
 
-  const addSession = useCallback((newSession: AssessmentSession) => {
-    const record: SavedRecord = {
-      entry: sessionToHistoryEntry(newSession),
-      session: newSession,
-    };
-    setSavedRecords((current) => {
-      const next = [record, ...current.filter((r) => r.entry.id !== record.entry.id)];
-      persistRecords(next);
-      return next;
-    });
-  }, []);
+  const addSession = useCallback(
+    (newSession: AssessmentSession) => {
+      // Saving requires an active session (the flow is unreachable otherwise).
+      if (!storageKey) return;
+      const record: SavedRecord = {
+        entry: sessionToHistoryEntry(newSession),
+        session: newSession,
+      };
+      setLocal((current) => {
+        const existing =
+          current && current.key === storageKey ? current.records : [];
+        const next = [
+          record,
+          ...existing.filter((r) => r.entry.id !== record.entry.id),
+        ];
+        persistRecords(storageKey, next);
+        return { key: storageKey, records: next };
+      });
+    },
+    [storageKey],
+  );
 
   // Local saves first (freshest), then remote not already present locally,
   // then — demo mode only — the static sample journal.

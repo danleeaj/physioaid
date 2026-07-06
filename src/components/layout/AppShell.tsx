@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { AssessmentFlowScreen } from "@/components/assessment/AssessmentFlowScreen";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { AssessmentHome } from "@/components/dashboard/AssessmentHome";
 import { CarePartnerScreen } from "@/components/dashboard/CarePartnerScreen";
 import { HistoryDetailScreen } from "@/components/dashboard/HistoryDetailScreen";
@@ -22,8 +23,6 @@ import {
   type ResourceSegment,
 } from "@/components/layout/tabs/ResourcesTab";
 
-const SESSION_KEY = "physioaid.session";
-
 const emptySubscribe = () => () => {};
 
 type Screen =
@@ -41,6 +40,7 @@ type Screen =
  */
 export function AppShell() {
   const { user, loading, signOut } = useAuth();
+  const { sessionKind, isDemo, uid, startDemo, endDemo } = useUserProfile();
   // false during SSR/hydration, true on the client afterwards — keeps the
   // server HTML (splash) and first client paint identical.
   const hydrated = useSyncExternalStore(
@@ -48,29 +48,26 @@ export function AppShell() {
     () => true,
     () => false,
   );
-  const [demoSession, setDemoSession] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.localStorage.getItem(SESSION_KEY) === "demo",
-  );
   const [tab, setTab] = useState<ShellTab>("assessment");
   const [stack, setStack] = useState<Screen[]>([]);
   const [resourcesSegment, setResourcesSegment] =
     useState<ResourceSegment>("nearby");
   // Care Partner Access is reachable from the signed-out Sign In screen too.
   const [signedOutCarePartner, setSignedOutCarePartner] = useState(false);
-  const historySession = user
-    ? ({ kind: "firebase", uid: user.uid } as const)
-    : demoSession
-      ? ({ kind: "demo" } as const)
-      : null;
+  // sessionKind already gives Firebase precedence over a leftover demo marker.
+  const historySession =
+    sessionKind === "firebase" && uid
+      ? ({ kind: "firebase", uid } as const)
+      : sessionKind === "demo"
+        ? ({ kind: "demo" } as const)
+        : null;
   const { entries, addSession, getSession } = useHistoryStore(historySession);
 
   useEffect(() => {
     loadTextSizePreference();
   }, []);
 
-  const signedIn = Boolean(user) || demoSession;
+  const signedIn = sessionKind !== "signedOut";
   const screen = stack[stack.length - 1];
 
   function push(next: Screen) {
@@ -86,23 +83,13 @@ export function AppShell() {
     setTab(nextTab);
   }
 
-  function startDemo() {
-    try {
-      window.localStorage.setItem(SESSION_KEY, "demo");
-    } catch {
-      // Session stays in memory only.
-    }
-    setDemoSession(true);
+  function handleStartDemo() {
+    startDemo();
     resetToTab("assessment");
   }
 
   function handleSignOut() {
-    try {
-      window.localStorage.removeItem(SESSION_KEY);
-    } catch {
-      // Nothing to clear.
-    }
-    setDemoSession(false);
+    endDemo();
     setStack([]);
     setTab("assessment");
     if (user) {
@@ -133,7 +120,7 @@ export function AppShell() {
           ) : (
             <SignInScreen
               onCarePartner={() => setSignedOutCarePartner(true)}
-              onDemo={startDemo}
+              onDemo={handleStartDemo}
             />
           )}
         </main>
@@ -146,7 +133,7 @@ export function AppShell() {
       <main className="app-shell">
         {screen?.name === "flow" && (
           <AssessmentFlowScreen
-            demoMode={demoSession && !user}
+            demoMode={isDemo}
             onExit={() => resetToTab("assessment")}
             onSaved={(session) => {
               addSession(session);
