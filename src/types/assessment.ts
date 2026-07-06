@@ -90,7 +90,7 @@ export type ChairStandMetrics = {
   durationSeconds: number;
   repetitions: number;
   movementQuality?: "steady" | "variable" | "unsafe";
-  source: "manual" | "demo" | "camera";
+  source: "manual" | "demo" | "camera" | "accelerometer";
 };
 
 export type MotionMetrics = {

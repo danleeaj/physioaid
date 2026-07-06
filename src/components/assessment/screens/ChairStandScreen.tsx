@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { CameraSetup } from "@/components/assessment/CameraSetup";
 import { ChairStandDemo } from "@/components/assessment/demos/ChairStandDemo";
 import { MotionSensorStatus } from "@/components/assessment/MotionSensorStatus";
 import { TestStartPanel } from "@/components/assessment/TestStartPanel";
@@ -9,12 +8,9 @@ import { FormGrid, TextField } from "@/components/assessment/ui/Fields";
 import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
-import {
-  getDemoChairStandMetrics,
-  getGuidedChairStandMetrics,
-} from "@/lib/vision/chair-stand";
+import { summarizeChairStandSamples } from "@/lib/sensors/chair-stand-detection";
+import { getDemoChairStandMetrics } from "@/lib/vision/chair-stand";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
-import type { CameraSupportStatus } from "@/lib/vision/camera";
 import type { MotionSupportStatus } from "@/types/motion";
 
 export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
@@ -27,7 +23,6 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
     markChairStoppedOrUnsafe,
   } = flow;
   const [motionStatus, setMotionStatus] = useState<MotionSupportStatus>();
-  const [cameraStatus, setCameraStatus] = useState<CameraSupportStatus>();
   const [motionSampleCount, setMotionSampleCount] = useState<number>();
 
   if (chairStandPhase === "demo") {
@@ -52,8 +47,10 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
           },
         ]}
         guidedPocketMode
-        onPrimary={(samples) => {
-          setChairStand(getGuidedChairStandMetrics());
+        onPrimary={(samples, elapsedSeconds) => {
+          setChairStand(
+            summarizeChairStandSamples({ samples, durationSeconds: elapsedSeconds }),
+          );
           setMotionSampleCount(samples.length);
         }}
         primaryLabel="Start 30s test"
@@ -76,13 +73,6 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
             label: "Motion",
             value: permissionLabel(motionStatus?.permissionState),
           },
-          {
-            label: "Camera",
-            value:
-              cameraStatus?.permissionState === "granted"
-                ? "ready"
-                : `optional · ${permissionLabel(cameraStatus?.permissionState)}`,
-          },
         ]}
         title="Chair stand test"
       >
@@ -93,7 +83,6 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
           </SafetyCallout>
         )}
         <MotionSensorStatus onStatusChange={setMotionStatus} />
-        <CameraSetup onStatusChange={setCameraStatus} />
       </TestStartPanel>
     );
   }
@@ -104,7 +93,6 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
         support="Use this fallback if the guided test cannot be completed with the available sensors."
         title="Enter chair stand result"
       />
-      <CameraSetup />
       <FormGrid>
         <TextField
           label="Repetitions"
