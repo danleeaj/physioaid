@@ -16,7 +16,7 @@ export function getChairStandGate(
   const unsafe =
     blockedBySafety ||
     chairStand.completionStatus === "stopped" ||
-    chairStand.movementQuality === "unsafe" ||
+    (chairStand.movementQuality === "unsafe" && chairStand.repetitions < 8) ||
     chairStand.repetitions < 5 ||
     chairStand.durationSeconds > 20;
 
