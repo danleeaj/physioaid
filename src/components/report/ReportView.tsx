@@ -3,10 +3,12 @@
 import { Printer } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { DECISION_SUPPORT_DISCLAIMER } from "@/config/clinical-config";
 import { safetyQuestions } from "@/config/clinical-config";
 import { profileCopy } from "@/content/clinical-copy";
 import { analyseAssessment } from "@/lib/analytics/ability-confidence";
+import { getAssessment } from "@/lib/assessment-history";
 import { createDemoSession } from "@/lib/demo-session";
 import { loadSessionForReport } from "@/lib/report-session";
 import type { AssessmentSession } from "@/types/assessment";
@@ -16,6 +18,17 @@ const riskLabels = {
   moderate: "Moderate — support recommended",
   high: "High — seek support or professional review",
 } as const;
+
+/**
+ * Resolution of the report id to a session, tracked as a discriminated union
+ * so `createDemoSession()` is reachable only for explicit demo ids — never
+ * as a silent fallback for a report that could not be found.
+ */
+type ReportResolution =
+  | { mode: "loading" }
+  | { mode: "demo"; session: AssessmentSession }
+  | { mode: "user"; session: AssessmentSession }
+  | { mode: "not_found"; signedIn: boolean };
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -39,25 +52,98 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
  * clinician can scan, not consumer tiles.
  */
 export function ReportView({ id }: { id: string }) {
-  const [session, setSession] = useState<AssessmentSession | undefined>();
-  const [isFallback, setIsFallback] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+  const [resolution, setResolution] = useState<ReportResolution>({
+    mode: "loading",
+  });
 
   useEffect(() => {
-    const stored = id === "demo" ? undefined : loadSessionForReport(id);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time post-hydration load from sessionStorage
-    setSession(stored ?? createDemoSession());
-    setIsFallback(!stored);
-    setLoaded(true);
-  }, [id]);
+    let cancelled = false;
 
-  if (!loaded || !session) {
+    async function resolve() {
+      // 1. Explicit demo ids — the only path that may reach demo data.
+      if (id === "demo" || id === "sample") {
+        setResolution({ mode: "demo", session: createDemoSession() });
+        return;
+      }
+
+      // 2. sessionStorage fast-path (same tab that generated the report).
+      const stored = loadSessionForReport(id);
+      if (stored) {
+        setResolution({ mode: "user", session: stored });
+        return;
+      }
+
+      // Wait for Firebase auth to settle before deciding signed-in vs not —
+      // shows the existing "Preparing report…" placeholder meanwhile.
+      if (authLoading) {
+        return;
+      }
+
+      // 3. Signed-in fallback: look the session up in Firestore.
+      if (user) {
+        try {
+          const remote = await getAssessment(user.uid, id);
+          if (cancelled) return;
+          if (remote) {
+            setResolution({ mode: "user", session: remote });
+            return;
+          }
+        } catch {
+          // Treat any read error (including a rules denial for another
+          // user's report) as not found — never fall back to demo data.
+        }
+      }
+
+      // 4. Honest not-found state — no clinical content.
+      if (!cancelled) {
+        setResolution({ mode: "not_found", signedIn: Boolean(user) });
+      }
+    }
+
+    resolve();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user, authLoading]);
+
+  if (resolution.mode === "loading") {
     return (
       <main className="mx-auto min-h-screen max-w-3xl px-5 py-8">
         <p className="text-[var(--muted)]">Preparing report…</p>
       </main>
     );
   }
+
+  if (resolution.mode === "not_found") {
+    return (
+      <main className="mx-auto min-h-screen max-w-3xl px-5 py-8">
+        <div className="panel-card grid gap-3 p-6 sm:p-10">
+          <h1 className="text-[length:var(--text-display)] font-semibold">
+            Report not found
+          </h1>
+          <p className="text-[var(--muted-strong)]">
+            We couldn&apos;t find this report. Reports open from the History
+            screen of the account or device that saved them.
+          </p>
+          {!resolution.signedIn && (
+            <p className="text-[var(--muted-strong)]">
+              Sign in to open reports saved to your account.
+            </p>
+          )}
+          <div>
+            <Link className="secondary-action" href="/">
+              Back to assessment
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const { session } = resolution;
+  const isDemo = resolution.mode === "demo";
 
   const analytics =
     session.analytics ??
@@ -87,6 +173,12 @@ export function ReportView({ id }: { id: string }) {
         </button>
       </div>
 
+      {isDemo && (
+        <div className="mb-6 rounded-lg border-2 border-[var(--warning)] bg-[var(--warning-soft)] px-4 py-3 text-[length:var(--text-body)] font-bold text-[var(--warning)]">
+          Sample report — Mr Tan (demonstration data, not a real participant)
+        </div>
+      )}
+
       <article className="panel-card p-6 sm:p-10">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -98,11 +190,6 @@ export function ReportView({ id }: { id: string }) {
               Generated {new Date(generatedAt).toLocaleString("en-SG")}
             </p>
           </div>
-          {isFallback && (
-            <span className="status-pill bg-[var(--warning-soft)] text-[var(--warning)]">
-              Demo data
-            </span>
-          )}
         </header>
 
         <SectionTitle>Participant</SectionTitle>

@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   setDoc,
   getDocs,
   query,
@@ -22,6 +23,18 @@ export async function saveAssessment(
     ...session,
     userId: uid,
   });
+}
+
+/** Single-doc lookup used by the report page to resolve a Firestore-backed session. */
+export async function getAssessment(
+  uid: string,
+  id: string,
+): Promise<AssessmentSession | null> {
+  const snap = await getDoc(doc(assessmentsRef(uid), id));
+  if (!snap.exists()) {
+    return null;
+  }
+  return snap.data() as AssessmentSession;
 }
 
 export async function getAssessmentHistory(

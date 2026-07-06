@@ -27,9 +27,9 @@ export function HistoryDetailScreen({
       const id = saveSessionForReport(session);
       router.push(`/report/${id}`);
     } else {
-      // Sample entries have no stored session — the report route's demo
-      // fallback renders with its visible "Demo data" pill.
-      router.push("/report/sample");
+      // Sample entries have no stored session — open the explicit demo
+      // report, which renders with its visible sample-data banner.
+      router.push("/report/demo");
     }
   }
 
