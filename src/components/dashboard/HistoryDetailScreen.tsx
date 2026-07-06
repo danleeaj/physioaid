@@ -56,7 +56,9 @@ export function HistoryDetailScreen({
             <p className="text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
               Confidence
             </p>
-            <p className="mt-1 text-xl font-bold leading-tight">{entry.confidence}/10</p>
+            <p className="mt-1 text-xl font-bold leading-tight">
+              {entry.confidence != null ? `${entry.confidence}/10` : "—"}
+            </p>
           </div>
           <div className="stat-tile">
             <p className="text-[length:var(--text-caption)] font-bold text-[var(--muted)]">

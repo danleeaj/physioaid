@@ -1,3 +1,4 @@
+import { normalizeSession } from "@/lib/assessment/normalize-session";
 import type { AssessmentSession } from "@/types/assessment";
 
 const STORAGE_PREFIX = "physioaid:report:";
@@ -30,7 +31,7 @@ export function loadSessionForReport(
     if (!raw) {
       return undefined;
     }
-    return JSON.parse(raw) as AssessmentSession;
+    return normalizeSession(JSON.parse(raw)) ?? undefined;
   } catch {
     return undefined;
   }

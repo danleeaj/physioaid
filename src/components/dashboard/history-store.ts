@@ -7,6 +7,7 @@ import {
   type HistoryEntry,
 } from "@/components/dashboard/demo-display-data";
 import { getAssessmentHistory } from "@/lib/assessment-history";
+import { normalizeSession } from "@/lib/assessment/normalize-session";
 import type { AssessmentSession } from "@/types/assessment";
 
 const LEGACY_STORAGE_KEY = "physioaid.history";
@@ -64,7 +65,17 @@ function loadStoredRecords(storageKey: string): SavedRecord[] {
           ? (item as SavedRecord)
           : ({ entry: item as HistoryEntry } satisfies SavedRecord),
       )
-      .filter((record) => record.entry && typeof record.entry.id === "string");
+      .filter((record) => record.entry && typeof record.entry.id === "string")
+      // Normalize stored sessions to the current schema (in memory only).
+      // A session that fails normalization keeps its history entry but
+      // drops the unusable session payload.
+      .map((record) => {
+        if (!record.session) return record;
+        const session = normalizeSession(record.session);
+        return session
+          ? { ...record, session }
+          : { entry: record.entry };
+      });
   } catch {
     return [];
   }

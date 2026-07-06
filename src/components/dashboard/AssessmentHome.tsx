@@ -102,7 +102,11 @@ export function AssessmentHome({
             <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[length:var(--text-label)]">
               <div>
                 <dt className="text-[var(--muted)]">Confidence</dt>
-                <dd className="font-bold">{lastResult.confidence}/10</dd>
+                <dd className="font-bold">
+                  {lastResult.confidence != null
+                    ? `${lastResult.confidence}/10`
+                    : "—"}
+                </dd>
               </div>
               <div>
                 <dt className="text-[var(--muted)]">Chair stand</dt>
@@ -170,7 +174,8 @@ export function AssessmentHome({
                 </p>
                 <p className="truncate font-bold">{entry.overall}</p>
                 <p className="text-[length:var(--text-label)] text-[var(--muted)]">
-                  Confidence {entry.confidence}/10
+                  Confidence{" "}
+                  {entry.confidence != null ? `${entry.confidence}/10` : "—"}
                 </p>
               </div>
               <ChevronRight aria-hidden className="shrink-0 text-[var(--muted)]" size={20} />

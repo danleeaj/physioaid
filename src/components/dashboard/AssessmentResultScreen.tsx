@@ -101,12 +101,15 @@ export function AssessmentResultScreen({
   const nextAction = analytics.recommendations[0];
 
   function buildSession(): AssessmentSession {
+    const now = new Date().toISOString();
     return {
       id:
         typeof crypto !== "undefined" && "randomUUID" in crypto
           ? crypto.randomUUID()
           : `session-${Date.now()}`,
-      createdAt: new Date().toISOString(),
+      schemaVersion: 2,
+      createdAt: now,
+      completedAt: now,
       consent,
       emergencyContact: contact,
       demographics,
@@ -118,7 +121,7 @@ export function AssessmentResultScreen({
       analytics,
       report: {
         id: "report",
-        generatedAt: new Date().toISOString(),
+        generatedAt: now,
         disclaimer: DECISION_SUPPORT_DISCLAIMER,
       },
     };

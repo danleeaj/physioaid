@@ -7,17 +7,59 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { DECISION_SUPPORT_DISCLAIMER } from "@/config/clinical-config";
 import { safetyQuestions } from "@/config/clinical-config";
 import { profileCopy } from "@/content/clinical-copy";
-import { analyseAssessment } from "@/lib/analytics/ability-confidence";
+import { analyseSessionIfPossible } from "@/lib/analytics/partial";
 import { getAssessment } from "@/lib/assessment-history";
+import { getTestRecordStatus } from "@/lib/assessment/test-status";
 import { createDemoSession } from "@/lib/demo-session";
 import { loadSessionForReport } from "@/lib/report-session";
-import type { AssessmentSession } from "@/types/assessment";
+import type {
+  AssessmentSession,
+  TestId,
+  TestRecordStatus,
+} from "@/types/assessment";
 
 const riskLabels = {
   low: "Low — maintain and monitor",
   moderate: "Moderate — support recommended",
   high: "High — seek support or professional review",
 } as const;
+
+/** The tests a saved session can currently carry records for. */
+const reportTests: { id: TestId; label: string }[] = [
+  { id: "self_confidence", label: "Confidence questionnaire" },
+  { id: "sit_to_stand", label: "Chair stand" },
+  { id: "walk", label: "Gait walk" },
+  { id: "floor_rising", label: "Floor rising" },
+];
+
+/**
+ * Measurement string for a test with a recorded result. Only called for
+ * statuses that imply the record exists (completed / stopped / demo).
+ */
+function measurementValue(
+  session: AssessmentSession,
+  testId: TestId,
+  status: TestRecordStatus,
+): string {
+  let value = "";
+  if (testId === "self_confidence" && session.questionnaire) {
+    value = `Average confidence ${session.questionnaire.averageScore.toFixed(1)} / 10`;
+  } else if (testId === "sit_to_stand" && session.chairStand) {
+    value = `${session.chairStand.repetitions} repetitions in ${session.chairStand.durationSeconds}s (${session.chairStand.completionStatus}, source: ${session.chairStand.source})`;
+  } else if (testId === "walk" && session.motion) {
+    value = `${session.motion.gaitSpeedMetersPerSecond ?? 0} m/s · stability ${Math.round(session.motion.stabilityScore * 100)}% · rhythm ${Math.round(session.motion.rhythmConsistency * 100)}% (source: ${session.motion.source})`;
+  } else if (testId === "floor_rising" && session.floorRising) {
+    value = `${session.floorRising.completionStatus}${
+      session.floorRising.durationSeconds !== undefined
+        ? ` in ${session.floorRising.durationSeconds}s`
+        : ""
+    } · assistance ${session.floorRising.requiredAssistance ? "required" : "not required"}`;
+  }
+  if (status === "stopped") {
+    return `${value} — stopped for safety — partial measurement`;
+  }
+  return value;
+}
 
 /**
  * Resolution of the report id to a session, tracked as a discriminated union
@@ -142,16 +184,27 @@ export function ReportView({ id }: { id: string }) {
     );
   }
 
+  // Every resolution path yields an already-normalized session exactly once:
+  // createDemoSession stamps schemaVersion 2, and loadSessionForReport /
+  // getAssessment both run normalizeSession internally.
   const { session } = resolution;
   const isDemo = resolution.mode === "demo";
 
-  const analytics =
-    session.analytics ??
-    analyseAssessment({
-      questionnaire: session.questionnaire,
-      chairStand: session.chairStand,
-      motion: session.motion,
-    });
+  const analytics = analyseSessionIfPossible(session, { allowDemo: isDemo });
+  const testStatuses = reportTests.map((test) => ({
+    ...test,
+    status: getTestRecordStatus(session, test.id),
+  }));
+  const measured = testStatuses.filter(
+    (test) =>
+      test.status === "completed" ||
+      test.status === "stopped" ||
+      test.status === "demo",
+  );
+  const skipped = testStatuses.filter((test) => test.status === "skipped");
+  const notAttempted = testStatuses.filter(
+    (test) => test.status === "missing",
+  );
   const generatedAt = session.report?.generatedAt ?? session.createdAt;
   const flaggedSafety = safetyQuestions.filter((question) =>
     Boolean(session.safetyScreen[question.id]),
@@ -184,7 +237,7 @@ export function ReportView({ id }: { id: string }) {
           <div>
             <p className="eyebrow">Physio-Aid screening report</p>
             <h1 className="mt-2 text-[length:var(--text-display)] font-semibold">
-              {session.demographics.displayName}
+              {session.demographics?.displayName || "Participant"}
             </h1>
             <p className="mt-1 text-[length:var(--text-label)] text-[var(--muted)]">
               Generated {new Date(generatedAt).toLocaleString("en-SG")}
@@ -194,20 +247,34 @@ export function ReportView({ id }: { id: string }) {
 
         <SectionTitle>Participant</SectionTitle>
         <div className="mt-3 grid gap-1.5">
-          <Field label="Name" value={session.demographics.displayName} />
-          <Field label="Age" value={String(session.demographics.age)} />
+          <Field
+            label="Name"
+            value={session.demographics?.displayName || "Not provided"}
+          />
+          <Field
+            label="Age"
+            value={
+              session.demographics
+                ? String(session.demographics.age)
+                : "Not provided"
+            }
+          />
           <Field
             label="Living situation"
-            value={session.demographics.livingSituation}
+            value={session.demographics?.livingSituation || "Not provided"}
           />
           <Field
             label="Fall history"
-            value={session.demographics.fallHistory.replaceAll("_", " ")}
+            value={
+              session.demographics
+                ? session.demographics.fallHistory.replaceAll("_", " ")
+                : "Not provided"
+            }
           />
           <Field
             label="Emergency contact"
             value={
-              session.emergencyContact.name
+              session.emergencyContact?.name
                 ? `${session.emergencyContact.name} (${session.emergencyContact.relationship}) · ${session.emergencyContact.phone}`
                 : "Not provided"
             }
@@ -217,7 +284,7 @@ export function ReportView({ id }: { id: string }) {
             value={
               session.consent.researchConsent
                 ? `Consented${
-                    session.demographics.planningArea
+                    session.demographics?.planningArea
                       ? ` · ${session.demographics.planningArea}`
                       : ""
                   } (anonymised, aggregate-only)`
@@ -240,64 +307,101 @@ export function ReportView({ id }: { id: string }) {
         </div>
 
         <SectionTitle>Ability–confidence summary</SectionTitle>
-        <div className="mt-3 grid gap-1.5">
-          <Field
-            label="Ability band"
-            value={analytics.abilityBand.replaceAll("_", " ")}
-          />
-          <Field
-            label="Confidence band"
-            value={analytics.confidenceBand.replaceAll("_", " ")}
-          />
-          <Field
-            label="Confidence average"
-            value={`${session.questionnaire.averageScore.toFixed(1)} / 10`}
-          />
-          <Field label="Profile" value={profileCopy[analytics.profile].title} />
-          <Field
-            label="Functional-falls risk"
-            value={riskLabels[analytics.riskCategory]}
-          />
-        </div>
-        <p className="mt-3 text-[var(--muted-strong)]">
-          {analytics.interpretation}
-        </p>
+        {analytics ? (
+          <>
+            <div className="mt-3 grid gap-1.5">
+              <Field
+                label="Ability band"
+                value={analytics.abilityBand.replaceAll("_", " ")}
+              />
+              <Field
+                label="Confidence band"
+                value={analytics.confidenceBand.replaceAll("_", " ")}
+              />
+              {session.questionnaire && (
+                <Field
+                  label="Confidence average"
+                  value={`${session.questionnaire.averageScore.toFixed(1)} / 10`}
+                />
+              )}
+              <Field
+                label="Profile"
+                value={profileCopy[analytics.profile].title}
+              />
+              <Field
+                label="Functional-falls risk"
+                value={riskLabels[analytics.riskCategory]}
+              />
+            </div>
+            <p className="mt-3 text-[var(--muted-strong)]">
+              {analytics.interpretation}
+            </p>
+          </>
+        ) : (
+          <p className="mt-3 text-[var(--muted-strong)]">
+            Not computed — requires a completed confidence questionnaire and
+            sit-to-stand test.
+          </p>
+        )}
 
-        <SectionTitle>Test measurements</SectionTitle>
-        <div className="mt-3 grid gap-1.5">
-          <Field
-            label="Chair stand"
-            value={`${session.chairStand.repetitions} repetitions in ${session.chairStand.durationSeconds}s (${session.chairStand.completionStatus}, source: ${session.chairStand.source})`}
-          />
-          {session.motion && (
-            <Field
-              label="Gait walk"
-              value={`${session.motion.gaitSpeedMetersPerSecond ?? 0} m/s · stability ${Math.round(session.motion.stabilityScore * 100)}% · rhythm ${Math.round(session.motion.rhythmConsistency * 100)}% (source: ${session.motion.source})`}
-            />
-          )}
-          {session.floorRising && (
-            <Field
-              label="Floor rising"
-              value={`${session.floorRising.completionStatus}${
-                session.floorRising.durationSeconds !== undefined
-                  ? ` in ${session.floorRising.durationSeconds}s`
-                  : ""
-              } · assistance ${session.floorRising.requiredAssistance ? "required" : "not required"}`}
-            />
-          )}
-        </div>
+        {measured.length > 0 && (
+          <>
+            <SectionTitle>Completed measurements</SectionTitle>
+            <div className="mt-3 grid gap-1.5">
+              {measured.map((test) => (
+                <Field
+                  key={test.id}
+                  label={test.label}
+                  value={measurementValue(session, test.id, test.status)}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
-        <SectionTitle>Recommendations</SectionTitle>
-        <ul className="mt-3 grid list-disc gap-2 pl-5">
-          {analytics.recommendations.map((recommendation) => (
-            <li key={recommendation.id}>
-              <strong className="font-bold">{recommendation.title}.</strong>{" "}
-              <span className="text-[var(--muted-strong)]">
-                {recommendation.body}
-              </span>
-            </li>
-          ))}
-        </ul>
+        {skipped.length > 0 && (
+          <>
+            <SectionTitle>Skipped</SectionTitle>
+            <ul className="mt-3 grid list-disc gap-1.5 pl-5">
+              {skipped.map((test) => (
+                <li className="text-[var(--muted-strong)]" key={test.id}>
+                  {test.label} — skipped (not analyzed)
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {notAttempted.length > 0 && (
+          <>
+            <SectionTitle>Not attempted</SectionTitle>
+            <ul className="mt-3 grid list-disc gap-1.5 pl-5">
+              {notAttempted.map((test) => (
+                <li className="text-[var(--muted-strong)]" key={test.id}>
+                  {test.label}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {analytics && (
+          <>
+            <SectionTitle>Recommendations</SectionTitle>
+            <ul className="mt-3 grid list-disc gap-2 pl-5">
+              {analytics.recommendations.map((recommendation) => (
+                <li key={recommendation.id}>
+                  <strong className="font-bold">
+                    {recommendation.title}.
+                  </strong>{" "}
+                  <span className="text-[var(--muted-strong)]">
+                    {recommendation.body}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
 
         <p className="mt-10 border-t border-[var(--line)] pt-4 text-[length:var(--text-label)] text-[var(--muted)]">
           {session.report?.disclaimer ?? DECISION_SUPPORT_DISCLAIMER}
