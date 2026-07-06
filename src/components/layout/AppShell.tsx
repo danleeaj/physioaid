@@ -13,6 +13,10 @@ import { ProfileScreen } from "@/components/dashboard/ProfileScreen";
 import { useHistoryStore } from "@/components/dashboard/history-store";
 import { loadTextSizePreference } from "@/lib/preferences";
 import { recordMovementActivity } from "@/lib/movement-log";
+import {
+  extractConcerns,
+  extractCompletedTests,
+} from "@/lib/assessment/concerns";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { SignInScreen } from "@/components/layout/SignInScreen";
 import { TabBar, type ShellTab } from "@/components/layout/TabBar";
@@ -239,6 +243,14 @@ export function AppShell() {
             {tab === "resources" && (
               <ResourcesTab
                 latestRisk={entries[0]?.riskCategory ?? null}
+                latestSession={(() => {
+                  const s = sessions[0];
+                  if (!s) return null;
+                  return {
+                    testsCompleted: extractCompletedTests(s),
+                    concerns: extractConcerns(s),
+                  };
+                })()}
                 onSegmentChange={setResourcesSegment}
                 segment={resourcesSegment}
               />
