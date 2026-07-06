@@ -421,8 +421,8 @@ export function useAssessmentFlow(options: {
       stabilityScore: 0.62,
       rhythmConsistency: 0.58,
       gaitSpeedMetersPerSecond: Number((gaitDistanceMeters / 5).toFixed(2)),
-      completionStatus: "demo",
-      source: "demo",
+      completionStatus: "completed",
+      source: "accelerometer",
     });
   }
 
