@@ -24,6 +24,7 @@ type ResourceCard = {
   segment: ResourceSegment;
   title: string;
   meta: string;
+  videoUrl?: string;
   actions: { label: string; icon: "directions" | "call" | "watch" }[];
 };
 
@@ -40,6 +41,7 @@ const cards: ResourceCard[] = [
     segment: "videos",
     title: "Chair stand exercise",
     meta: "8 min · Beginner",
+    videoUrl: "https://www.youtube.com/watch?v=sZh2LbrZ3U8",
     actions: [{ label: "Watch", icon: "watch" }],
   },
   {
@@ -47,6 +49,15 @@ const cards: ResourceCard[] = [
     segment: "videos",
     title: "Balance practice",
     meta: "8 min · Beginner",
+    videoUrl: "https://www.youtube.com/watch?v=Xkd4fyk6Unc",
+    actions: [{ label: "Watch", icon: "watch" }],
+  },
+  {
+    id: "gait-video",
+    segment: "videos",
+    title: "Walking & gait training",
+    meta: "10 min · Beginner",
+    videoUrl: "https://www.youtube.com/watch?v=chw2oMUrh4U",
     actions: [{ label: "Watch", icon: "watch" }],
   },
   {
@@ -103,10 +114,12 @@ type Suggestions = {
 export function ResourcesTab({
   segment,
   onSegmentChange,
+  onWatchVideo,
   latestRisk,
 }: {
   segment: ResourceSegment;
   onSegmentChange: (segment: ResourceSegment) => void;
+  onWatchVideo?: (card: ResourceCard) => void;
   /** Coarse risk band from the latest history entry — the only profile hint sent to the API. */
   latestRisk?: RiskCategory | null;
 }) {
@@ -231,9 +244,13 @@ export function ResourcesTab({
         {visible.map((card) => (
           <article className="app-card grid gap-3" key={card.id}>
             {card.segment === "videos" ? (
-              <div className="clip-cover">
+              <button
+                className="clip-cover"
+                onClick={() => card.videoUrl && onWatchVideo?.(card)}
+                type="button"
+              >
                 <span className="clip-play" />
-              </div>
+              </button>
             ) : (
               <div className="flex items-center gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--success-soft)] text-[var(--primary-dark)]">
@@ -256,6 +273,11 @@ export function ResourcesTab({
                   <button
                     className="secondary-action inline-action flex-1"
                     key={action.label}
+                    onClick={
+                      action.icon === "watch" && card.videoUrl
+                        ? () => onWatchVideo?.(card)
+                        : undefined
+                    }
                     type="button"
                   >
                     {Icon && <Icon aria-hidden size={18} />}

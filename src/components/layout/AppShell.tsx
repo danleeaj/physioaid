@@ -21,6 +21,10 @@ import {
   ResourcesTab,
   type ResourceSegment,
 } from "@/components/layout/tabs/ResourcesTab";
+import {
+  VideoPlayerScreen,
+  type VideoInfo,
+} from "@/components/layout/VideoPlayerScreen";
 
 const emptySubscribe = () => () => {};
 
@@ -30,7 +34,8 @@ type Screen =
   | { name: "historyDetail"; entryId: string }
   | { name: "profile" }
   | { name: "carePartner" }
-  | { name: "privacy" };
+  | { name: "privacy" }
+  | { name: "video"; video: VideoInfo };
 
 /**
  * Mobile app shell: Sign In when signed out; bottom-tab app (Assessment /
@@ -219,6 +224,9 @@ export function AppShell() {
         )}
         {screen?.name === "carePartner" && <CarePartnerScreen onBack={pop} />}
         {screen?.name === "privacy" && <PrivacyConsentScreen onBack={pop} />}
+        {screen?.name === "video" && (
+          <VideoPlayerScreen video={screen.video} onBack={pop} />
+        )}
 
         {!screen && (
           <>
@@ -240,6 +248,17 @@ export function AppShell() {
               <ResourcesTab
                 latestRisk={entries[0]?.riskCategory ?? null}
                 onSegmentChange={setResourcesSegment}
+                onWatchVideo={(card) =>
+                  push({
+                    name: "video",
+                    video: {
+                      id: card.id,
+                      title: card.title,
+                      meta: card.meta,
+                      videoUrl: card.videoUrl!,
+                    },
+                  })
+                }
                 segment={resourcesSegment}
               />
             )}
