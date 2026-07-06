@@ -32,9 +32,14 @@ type TestStartPanelProps = {
    * countdown completes). Metric-injection semantics match the old
    * tap-to-complete behaviour. Receives the real devicemotion samples
    * collected between Start and Stop (empty if motion capture isn't
-   * supported on this device/browser) plus the run's elapsed duration.
+   * supported on this device/browser) plus the run's elapsed duration,
+   * plus optional calibration samples captured during the practice phase.
    */
-  onPrimary: (samples: MotionSample[], elapsedSeconds: number) => void;
+  onPrimary: (
+    samples: MotionSample[],
+    elapsedSeconds: number,
+    calibrationSamples?: MotionSample[],
+  ) => void;
   statusItems: DisplayItem[];
   resultItems?: DisplayItem[];
   fallbackActions: FallbackAction[];
@@ -52,6 +57,12 @@ type TestStartPanelProps = {
   /** Word spoken at the end of the countdown, e.g. "begin" or "go". */
   countdownCueWord?: string;
   /**
+   * Seconds for a calibration phase (2–3 practice reps) inserted between
+   * baseline and countdown. The captured samples are passed as the third
+   * arg to onPrimary so the caller can derive personalized thresholds.
+   */
+  calibrationSeconds?: number;
+  /**
    * When set, the active phase auto-completes once step-based distance
    * (accelerometer peak detection × estimated step length) reaches
    * targetMeters — no GPS involved. Lets a distance-based test auto-stop
@@ -62,7 +73,13 @@ type TestStartPanelProps = {
 };
 
 type RunState = "ready" | "running" | "done";
-type GuidedStage = "priming" | "pocket" | "baseline" | "countdown" | "active";
+type GuidedStage =
+  | "priming"
+  | "pocket"
+  | "baseline"
+  | "calibrate"
+  | "countdown"
+  | "active";
 
 const POCKET_PLACEMENT_MS = 4000;
 const BASELINE_MS = 3000;
@@ -83,6 +100,11 @@ const GUIDED_STAGE_COPY: Record<
   baseline: {
     headline: "Stand still",
     detail: "Recording a resting baseline before the test begins.",
+  },
+  calibrate: {
+    headline: "Practice reps",
+    detail:
+      "Do 2–3 practice sit-to-stands now. This calibrates the sensor to your movement.",
   },
   countdown: {
     headline: "Get ready…",
@@ -112,6 +134,7 @@ export function TestStartPanel({
   showMotionReadout = false,
   guidedPocketMode = false,
   countdownCueWord = "begin",
+  calibrationSeconds,
   autoStopDistance,
   children,
 }: TestStartPanelProps) {
@@ -130,6 +153,8 @@ export function TestStartPanel({
   const stepCounterRef = useRef<ReturnType<typeof createStepCounter> | null>(
     null,
   );
+  const calibrationStartRef = useRef(0);
+  const calibrationEndRef = useRef(0);
   const cancelledRef = useRef(false);
   const finishedRef = useRef(false);
   const finishRunRef = useRef<(elapsed: number) => void>(() => {});
@@ -211,9 +236,17 @@ export function TestStartPanel({
       speak("Test complete.");
       vibrate([120, 80, 120]);
     }
+    const calibrationSamples =
+      calibrationStartRef.current < calibrationEndRef.current
+        ? samplesRef.current.slice(
+            calibrationStartRef.current,
+            calibrationEndRef.current,
+          )
+        : undefined;
     onPrimaryRef.current(
       samplesRef.current.slice(activeStartIndexRef.current),
       elapsed,
+      calibrationSamples,
     );
     setRunState("done");
   }
@@ -258,6 +291,20 @@ export function TestStartPanel({
     beginCapture();
     await wait(BASELINE_MS);
     if (cancelledRef.current) return;
+
+    if (calibrationSeconds) {
+      calibrationStartRef.current = samplesRef.current.length;
+      setGuidedStage("calibrate");
+      speak("Do 2 practice sit to stands now.");
+      vibrate([120, 80, 120]);
+      await wait(calibrationSeconds * 1000);
+      if (cancelledRef.current) return;
+      calibrationEndRef.current = samplesRef.current.length;
+      speak("Good. Stand still.");
+      vibrate(120);
+      await wait(2000);
+      if (cancelledRef.current) return;
+    }
 
     setGuidedStage("countdown");
     speak(`3, 2, 1, ${countdownCueWord}.`);
