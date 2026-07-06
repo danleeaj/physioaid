@@ -40,6 +40,7 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
     return (
       <TestStartPanel
         autoCompleteSeconds={30}
+        countdownCueWord="begin"
         fallbackActions={[
           {
             label: "Enter manually",
@@ -50,6 +51,7 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
             onClick: markChairStoppedOrUnsafe,
           },
         ]}
+        guidedPocketMode
         onPrimary={(samples) => {
           setChairStand(getGuidedChairStandMetrics());
           setMotionSampleCount(samples.length);

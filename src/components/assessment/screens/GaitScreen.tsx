@@ -68,6 +68,7 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
   if (gaitPhase === "start") {
     return (
       <TestStartPanel
+        countdownCueWord="go"
         fallbackActions={[
           {
             label: "Enter manually",
@@ -78,6 +79,7 @@ export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
             onClick: markGaitStoppedOrUnstable,
           },
         ]}
+        guidedPocketMode
         onPrimary={startGaitCountdown}
         primaryLabel="Start walk"
         resultItems={[
