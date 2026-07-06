@@ -88,6 +88,11 @@ const segments: { id: ResourceSegment; label: string }[] = [
   { id: "clinics", label: "Clinics" },
 ];
 
+function youtubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
 const actionIcons = {
   directions: Navigation,
   call: Phone,
@@ -247,6 +252,15 @@ export function ResourcesTab({
               <button
                 className="clip-cover"
                 onClick={() => card.videoUrl && onWatchVideo?.(card)}
+                style={
+                  card.videoUrl && youtubeId(card.videoUrl)
+                    ? {
+                        backgroundImage: `url(https://img.youtube.com/vi/${youtubeId(card.videoUrl)}/hqdefault.jpg)`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : undefined
+                }
                 type="button"
               >
                 <span className="clip-play" />
