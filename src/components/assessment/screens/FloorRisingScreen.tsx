@@ -52,10 +52,6 @@ export function FloorRisingScreen({ flow }: { flow: AssessmentFlow }) {
             label: "Enter manually",
             onClick: () => setFloorRisingPhase("manual"),
           },
-          {
-            label: "Use demo",
-            onClick: () => setFloorRising(getDemoFloorRisingMetrics()),
-          },
         ]}
         onPrimary={() => setFloorRising(getCameraFloorRisingPlaceholder())}
         primaryLabel="Start when ready"

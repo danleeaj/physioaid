@@ -51,10 +51,6 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
             onClick: () => setChairStandPhase("manual"),
           },
           {
-            label: "Use demo",
-            onClick: () => setChairStand(getDemoChairStandMetrics()),
-          },
-          {
             label: "Mark stopped or unsafe",
             onClick: markChairStoppedOrUnsafe,
           },
