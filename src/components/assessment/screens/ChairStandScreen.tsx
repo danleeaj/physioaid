@@ -9,7 +9,10 @@ import { FormGrid, TextField } from "@/components/assessment/ui/Fields";
 import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
-import { getDemoChairStandMetrics } from "@/lib/vision/chair-stand";
+import {
+  getDemoChairStandMetrics,
+  getGuidedChairStandMetrics,
+} from "@/lib/vision/chair-stand";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
 import type { CameraSupportStatus } from "@/lib/vision/camera";
 import type { MotionSupportStatus } from "@/types/motion";
@@ -56,7 +59,7 @@ export function ChairStandScreen({ flow }: { flow: AssessmentFlow }) {
             onClick: markChairStoppedOrUnsafe,
           },
         ]}
-        onPrimary={() => setChairStand(getDemoChairStandMetrics())}
+        onPrimary={() => setChairStand(getGuidedChairStandMetrics())}
         primaryLabel="Start 30s test"
         resultItems={[
           ["Reps", `${chairStand.repetitions}`],
