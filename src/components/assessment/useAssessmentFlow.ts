@@ -88,8 +88,10 @@ export function useAssessmentFlow(options: {
   /** Draft namespace — `uid` for signed-in users, "demo" for demo mode. */
   identity: string;
   demoMode: boolean;
+  /** From the movement log — drives the exercise card's "Done today" state. */
+  exerciseDoneToday?: boolean;
 }) {
-  const { identity, demoMode } = options;
+  const { identity, demoMode, exerciseDoneToday } = options;
 
   const [draftState, setDraftState] = useState(() => ({
     identity,
@@ -249,7 +251,10 @@ export function useAssessmentFlow(options: {
     [draft, demoMode],
   );
 
-  const hubCards = useMemo(() => deriveHubCards(draft), [draft]);
+  const hubCards = useMemo(
+    () => deriveHubCards(draft, { exerciseDoneToday }),
+    [draft, exerciseDoneToday],
+  );
   const precheckComplete = isPrecheckComplete(draft);
   const canFinish = deriveCanFinish(draft);
 

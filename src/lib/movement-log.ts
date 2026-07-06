@@ -130,7 +130,7 @@ export async function getMovementLogs(
   return snap.docs.map((d) => d.data()).filter(isMovementActivityLog);
 }
 
-function toLocalDateKey(iso: string): string {
+export function toLocalDateKey(iso: string): string {
   const date = new Date(iso);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");

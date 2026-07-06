@@ -1,15 +1,18 @@
 "use client";
 
-import { ArrowRight, Dumbbell } from "lucide-react";
+import { ArrowRight, Check, Dumbbell } from "lucide-react";
 import { AssessmentHubScreen } from "@/components/assessment/AssessmentHubScreen";
 import { PrecheckScreen } from "@/components/assessment/PrecheckScreen";
 import { TestScreen } from "@/components/assessment/TestScreen";
 import { useAssessmentFlow } from "@/components/assessment/useAssessmentFlow";
 import { useUserProfile } from "@/components/auth/UserProfileProvider";
+import { useMovementLog } from "@/components/community/useMovementLog";
 import { AssessmentResultScreen } from "@/components/dashboard/AssessmentResultScreen";
+import type { HistorySession } from "@/components/dashboard/history-store";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { TopBar } from "@/components/layout/TopBar";
 import { shellCopy } from "@/components/layout/copy";
+import { toLocalDateKey } from "@/lib/movement-log";
 import type { AssessmentSession, TestId } from "@/types/assessment";
 
 /**
@@ -33,7 +36,16 @@ export function AssessmentFlowScreen({
   // Draft namespace: signed-in users get their own draft; demo mode shares
   // the "demo" namespace (the flow is only reachable when signed in or demo).
   const identity = uid ?? "demo";
-  const flow = useAssessmentFlow({ identity, demoMode });
+  const movementSession: HistorySession = uid
+    ? { kind: "firebase", uid }
+    : { kind: "demo" };
+  const { logs, logActivity } = useMovementLog(movementSession);
+  const todayKey = toLocalDateKey(new Date().toISOString());
+  const exerciseDoneToday = logs.some(
+    (log) =>
+      log.source === "exercise" && toLocalDateKey(log.completedAt) === todayKey,
+  );
+  const flow = useAssessmentFlow({ identity, demoMode, exerciseDoneToday });
   const { t } = useLanguage();
 
   if (flow.view === "result") {
@@ -65,7 +77,21 @@ export function AssessmentFlowScreen({
   }
 
   if (flow.view === "exercise") {
-    return <ExerciseScreen onBack={flow.returnToHub} onViewResources={onViewResources} />;
+    return (
+      <ExerciseScreen
+        doneToday={exerciseDoneToday}
+        onBack={flow.returnToHub}
+        onMarkDone={() => {
+          void logActivity({
+            source: "exercise",
+            activityType: "chair_exercise",
+            title: "Guided exercise",
+            durationMinutes: null,
+          }).catch(() => {});
+        }}
+        onViewResources={onViewResources}
+      />
+    );
   }
 
   return <AssessmentHubScreen demoMode={demoMode} flow={flow} onExit={onExit} />;
@@ -73,14 +99,18 @@ export function AssessmentFlowScreen({
 
 /**
  * Exercise card — guided videos in Resources. Practice, never assessment
- * evidence. Movement logging ("Mark done") arrives with the movement log
- * (Goal 6); until then this card only opens the videos.
+ * evidence: marking it done writes a movement activity log, not a test
+ * result.
  */
 function ExerciseScreen({
+  doneToday,
   onBack,
+  onMarkDone,
   onViewResources,
 }: {
+  doneToday: boolean;
   onBack: () => void;
+  onMarkDone: () => void;
   onViewResources: () => void;
 }) {
   const { t } = useLanguage();
@@ -108,6 +138,20 @@ function ExerciseScreen({
             {copy.exerciseOpenVideos}
             <ArrowRight aria-hidden size={20} />
           </button>
+          {doneToday ? (
+            <p className="flex items-center justify-center gap-2 font-semibold text-[var(--primary-dark)]">
+              <Check aria-hidden size={20} />
+              {copy.exerciseLoggedToday}
+            </p>
+          ) : (
+            <button
+              className="secondary-action w-full"
+              onClick={onMarkDone}
+              type="button"
+            >
+              {copy.exerciseMarkDone}
+            </button>
+          )}
         </section>
       </div>
     </div>

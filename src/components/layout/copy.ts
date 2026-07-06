@@ -101,6 +101,8 @@ export const shellCopy = {
     exerciseBody:
       "Gentle guided movement helps keep strength and balance between checks. Exercise is practice, not an assessment — it never affects your results.",
     exerciseOpenVideos: "Open exercise videos",
+    exerciseMarkDone: "Mark as done today",
+    exerciseLoggedToday: "Logged for today",
   },
   precheck: {
     title: "Consent & safety check",
