@@ -802,6 +802,9 @@ html[data-text-size="xl"] {
   .primary-action,
   .secondary-action {
     min-height: 3.75rem;   /* 60px on phones */
+  }
+  .primary-action:not(.inline-action),
+  .secondary-action:not(.inline-action) {
     width: 100%;
   }
 }

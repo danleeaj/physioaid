@@ -254,7 +254,7 @@ export function ResourcesTab({
                 const Icon = actionIcons[action.icon];
                 return (
                   <button
-                    className="secondary-action !w-auto flex-1"
+                    className="secondary-action inline-action flex-1"
                     key={action.label}
                     type="button"
                   >
