@@ -254,7 +254,7 @@ export function ReportView({ id }: { id: string }) {
           <Field
             label="Age"
             value={
-              session.demographics
+              session.demographics?.age != null
                 ? String(session.demographics.age)
                 : "Not provided"
             }
@@ -266,7 +266,7 @@ export function ReportView({ id }: { id: string }) {
           <Field
             label="Fall history"
             value={
-              session.demographics
+              session.demographics?.fallHistory
                 ? session.demographics.fallHistory.replaceAll("_", " ")
                 : "Not provided"
             }

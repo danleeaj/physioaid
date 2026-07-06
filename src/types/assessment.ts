@@ -38,19 +38,6 @@ export type AbilityConfidenceProfile =
   | "possible_risk_taking"
   | "high_vulnerability";
 
-export type AssessmentStep =
-  | "landing"
-  | "consent"
-  | "safety"
-  | "emergency_contact"
-  | "demographics"
-  | "questionnaire"
-  | "chair_stand"
-  | "motion_gait"
-  | "floor_rising"
-  | "dashboard"
-  | "report";
-
 export type ConsentRecord = {
   assessmentConsent: boolean;
   researchConsent: boolean;
@@ -65,9 +52,15 @@ export type EmergencyContact = {
 
 export type Demographics = {
   displayName: string;
-  age: number;
+  /**
+   * Optional since schema 2: demographics are stamped from the user profile
+   * at save time, and the profile stores a coarse age group — never a numeric
+   * age — so honest sessions may omit it.
+   */
+  age?: number;
   livingSituation: string;
-  fallHistory: "none" | "near_fall" | "fall";
+  /** Optional since schema 2 — the profile does not collect fall history. */
+  fallHistory?: "none" | "near_fall" | "fall";
   /**
    * Coarse, self-reported planning area — collected only with research
    * consent for aggregate programme planning. Never derived from GPS.

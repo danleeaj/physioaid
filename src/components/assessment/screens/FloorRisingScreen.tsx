@@ -22,7 +22,7 @@ export function FloorRisingScreen({ flow }: { flow: AssessmentFlow }) {
     floorRising,
     setFloorRising,
     motionGate,
-    skipToDashboardWithFloorSkipped,
+    skipFloorRising,
   } = flow;
   const [cameraStatus, setCameraStatus] = useState<CameraSupportStatus>();
 
@@ -30,7 +30,7 @@ export function FloorRisingScreen({ flow }: { flow: AssessmentFlow }) {
     return (
       <FloorRisingDemo
         onContinue={() => setFloorRisingPhase("start")}
-        onSkip={skipToDashboardWithFloorSkipped}
+        onSkip={skipFloorRising}
         onUseDemo={() => {
           setFloorRising(getDemoFloorRisingMetrics());
           setFloorRisingPhase("start");
@@ -45,7 +45,7 @@ export function FloorRisingScreen({ flow }: { flow: AssessmentFlow }) {
         fallbackActions={[
           {
             label: "Skip this test",
-            onClick: skipToDashboardWithFloorSkipped,
+            onClick: skipFloorRising,
             tone: "primary",
           },
           {
@@ -155,7 +155,7 @@ export function FloorRisingScreen({ flow }: { flow: AssessmentFlow }) {
         </button>
         <button
           className="secondary-action"
-          onClick={skipToDashboardWithFloorSkipped}
+          onClick={skipFloorRising}
           type="button"
         >
           Skip floor-rising
