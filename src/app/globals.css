@@ -828,4 +828,10 @@ html[data-text-size="xl"] {
   .no-print {
     display: none !important;
   }
+  .signal-card,
+  .stat-tile {
+    background: #f5f5f5;
+    box-shadow: none;
+    break-inside: avoid;
+  }
 }

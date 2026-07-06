@@ -25,6 +25,12 @@ const DIRECTION_ICONS: Record<
   declined: TrendingDown,
 };
 
+const DIRECTION_COLORS: Record<TrendDirection, string> = {
+  improved: "bg-[var(--success-soft)] text-[var(--success)]",
+  steady: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  declined: "bg-[var(--danger-soft)] text-[var(--danger)]",
+};
+
 /** Coarse whole-day gap between the two compared checks (clamped 1–730). */
 function daysBetweenFromReport(report: TrendReport): number {
   const first = report.trends[0];
@@ -152,7 +158,7 @@ export function TrendSection({ sessions }: { sessions: AssessmentSession[] }) {
               <p className="text-[length:var(--text-caption)] font-bold uppercase tracking-wide text-[var(--muted)]">
                 {copy.metrics[trend.metric]}
               </p>
-              <span className="flex shrink-0 items-center gap-1 text-[length:var(--text-label)] font-bold">
+              <span className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-[length:var(--text-label)] font-bold ${DIRECTION_COLORS[trend.direction]}`}>
                 <DirectionIcon aria-hidden size={16} />
                 {copy.direction[trend.direction]}
               </span>

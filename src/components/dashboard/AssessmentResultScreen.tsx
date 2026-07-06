@@ -275,7 +275,7 @@ export function AssessmentResultScreen({
 
       {/* Recommended next action */}
       {nextAction && (
-        <section className="app-card grid gap-1 border-[var(--primary)]">
+        <section className="app-card grid gap-1 border-l-4 border-l-[var(--primary)]">
           <p className="text-[length:var(--text-caption)] font-bold uppercase tracking-wide text-[var(--muted)]">
             Recommended next action
           </p>
@@ -378,9 +378,14 @@ function RiskSection({
   const { t } = useLanguage();
   const riskSupport = getRiskSupportCopy(analytics.riskCategory);
   const RiskIcon = riskIcons[analytics.riskCategory];
+  const riskIconColor = {
+    low: "text-[var(--success)]",
+    moderate: "text-[var(--warning)]",
+    high: "text-[var(--danger)]",
+  } as const;
   return (
     <section className="signal-card flex items-start gap-3">
-      <RiskIcon aria-hidden className="mt-0.5 shrink-0 text-[var(--primary)]" size={26} />
+      <RiskIcon aria-hidden className={`mt-0.5 shrink-0 ${riskIconColor[analytics.riskCategory]}`} size={26} />
       <div>
         <p className="text-[length:var(--text-label)] font-bold text-[var(--muted-strong)]">
           {t("dashboard.riskTitle")}

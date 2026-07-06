@@ -43,15 +43,22 @@ export function InsightsDashboard() {
         </div>
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {kpis.map((kpi) => (
-            <div className="kpi-card" key={kpi.id}>
-              <p className="text-[length:var(--text-label)] font-bold text-[var(--muted-strong)]">
-                {kpi.label}
-              </p>
-              <p className="kpi-value mt-2">{kpi.value}</p>
-              <p className="kpi-delta mt-1">{kpi.delta}</p>
-            </div>
-          ))}
+          {kpis.map((kpi) => {
+            const deltaColor = kpi.delta.startsWith("+")
+              ? "text-[var(--success)]"
+              : kpi.delta.includes("stable")
+                ? "text-[var(--warning)]"
+                : "";
+            return (
+              <div className="kpi-card" key={kpi.id}>
+                <p className="text-[length:var(--text-label)] font-bold text-[var(--muted-strong)]">
+                  {kpi.label}
+                </p>
+                <p className="kpi-value mt-2">{kpi.value}</p>
+                <p className={`kpi-delta mt-1 ${deltaColor}`}>{kpi.delta}</p>
+              </div>
+            );
+          })}
         </section>
 
         <section className="grid gap-3">
