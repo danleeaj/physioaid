@@ -135,6 +135,30 @@ export const shellCopy = {
   },
   community: {
     title: "Community",
+    goalTitle: (days: number) => `${days}-day movement goal`,
+    goalReached: "Goal reached",
+    goalDaysLeft: (days: number) => `${days} ${days === 1 ? "day" : "days"} left`,
+    goalProgress: (goalDays: number, targetDays: number) =>
+      `${goalDays} of ${targetDays} days this week — every gentle movement counts.`,
+    logWalk: "Log a walk",
+    logWalkPrompt: "How long did you walk?",
+    logWalkCancel: "Cancel",
+    walkDuration10: "10 min",
+    walkDuration20: "20 min",
+    walkDuration30: "30 min",
+    walkLogged: "Walk logged — nice work.",
+    sampleFeedNote: "Sample neighbourhood feed",
+    samplePill: "Sample",
+    optInTitle: "Share your movement with neighbours?",
+    optInBody:
+      "Sharing is off by default. Everything you’ve logged so far is private — only you can see it. Turning this on will show your movement activity to neighbours in Community.",
+    optInAction: "Turn on community sharing",
+    optInDismiss: "Keep private",
+    emptyFeedTitle: "No neighbours are sharing yet",
+    emptyFeedBody:
+      "You’re in early — activity from opted-in neighbours will appear here.",
+    yourActivityTitle: "Your activity this week",
+    yourActivityEmpty: "No activity logged yet this week.",
   },
   resources: {
     title: "Resources",
