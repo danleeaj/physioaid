@@ -12,6 +12,7 @@ import { getAssessment } from "@/lib/assessment-history";
 import { getTestRecordStatus } from "@/lib/assessment/test-status";
 import { createDemoSession } from "@/lib/demo-session";
 import { loadSessionForReport } from "@/lib/report-session";
+import { useAssessmentAnalysis } from "@/hooks/useAssessmentAnalysis";
 import type {
   AssessmentSession,
   TestId,
@@ -150,6 +151,21 @@ export function ReportView({ id }: { id: string }) {
     };
   }, [id, user, authLoading]);
 
+  const resolvedSession =
+    resolution.mode === "demo" || resolution.mode === "user"
+      ? resolution.session
+      : undefined;
+  const isDemo = resolution.mode === "demo";
+  const analytics = resolvedSession
+    ? analyseSessionIfPossible(resolvedSession, { allowDemo: isDemo })
+    : undefined;
+  const aiAnalysis = useAssessmentAnalysis(analytics, {
+    questionnaire: resolvedSession?.questionnaire,
+    chairStand: resolvedSession?.chairStand,
+    motion: resolvedSession?.motion,
+    floorRising: resolvedSession?.floorRising,
+  });
+
   if (resolution.mode === "loading") {
     return (
       <main className="mx-auto min-h-screen max-w-3xl px-5 py-8">
@@ -187,10 +203,7 @@ export function ReportView({ id }: { id: string }) {
   // Every resolution path yields an already-normalized session exactly once:
   // createDemoSession stamps schemaVersion 2, and loadSessionForReport /
   // getAssessment both run normalizeSession internally.
-  const { session } = resolution;
-  const isDemo = resolution.mode === "demo";
-
-  const analytics = analyseSessionIfPossible(session, { allowDemo: isDemo });
+  const session = resolvedSession!;
   const testStatuses = reportTests.map((test) => ({
     ...test,
     status: getTestRecordStatus(session, test.id),
@@ -334,8 +347,15 @@ export function ReportView({ id }: { id: string }) {
               />
             </div>
             <p className="mt-3 text-[var(--muted-strong)]">
-              {analytics.interpretation}
+              {aiAnalysis.source === "ai" && aiAnalysis.interpretation
+                ? aiAnalysis.interpretation
+                : analytics.interpretation}
             </p>
+            {aiAnalysis.source === "ai" && (
+              <p className="mt-1 text-[length:var(--text-caption)] text-[var(--muted)]">
+                Analysis enhanced by AI
+              </p>
+            )}
           </>
         ) : (
           <p className="mt-3 text-[var(--muted-strong)]">
@@ -389,7 +409,10 @@ export function ReportView({ id }: { id: string }) {
           <>
             <SectionTitle>Recommendations</SectionTitle>
             <ul className="mt-3 grid list-disc gap-2 pl-5">
-              {analytics.recommendations.map((recommendation) => (
+              {(aiAnalysis.source === "ai" && aiAnalysis.recommendations.length > 0
+                ? aiAnalysis.recommendations
+                : analytics.recommendations
+              ).map((recommendation) => (
                 <li key={recommendation.id}>
                   <strong className="font-bold">
                     {recommendation.title}.

@@ -30,6 +30,7 @@ import {
   clearDraft,
   isRecordedMetric,
 } from "@/lib/assessment/session-draft";
+import { useAssessmentAnalysis } from "@/hooks/useAssessmentAnalysis";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
 import type {
   AssessmentSession,
@@ -85,6 +86,13 @@ export function AssessmentResultScreen({
   const { analytics, draft, scoredQuestionnaire, stoppedBeforeHigherRisk } =
     flow;
 
+  const aiAnalysis = useAssessmentAnalysis(analytics, {
+    questionnaire: scoredQuestionnaire,
+    chairStand: draft.chairStand ?? undefined,
+    motion: draft.motion ?? undefined,
+    floorRising: draft.floorRising ?? undefined,
+  });
+
   const hasQuestionnaire = scoredQuestionnaire !== undefined;
   const hasChairStand = isRecordedMetric(draft.chairStand, draft.demoLoaded);
   const hasWalk = isRecordedMetric(draft.motion, draft.demoLoaded);
@@ -124,7 +132,7 @@ export function AssessmentResultScreen({
     (draft.floorRising?.completionStatus === "skipped" ||
       draft.floorRising?.completionStatus === "stopped");
 
-  const nextAction = analytics?.recommendations[0];
+  const nextAction = aiAnalysis.recommendations[0] ?? analytics?.recommendations[0];
 
   function buildSession(): AssessmentSession {
     return buildSessionFromDraft(draft, {
@@ -162,7 +170,7 @@ export function AssessmentResultScreen({
           {displayName ? `${displayName} · Overall status` : "Overall status"}
         </p>
         {analytics ? (
-          <AnalyticsHeadline analytics={analytics} />
+          <AnalyticsHeadline analytics={analytics} aiInterpretation={aiAnalysis.interpretation} aiSource={aiAnalysis.source} />
         ) : (
           <>
             <p className="text-[length:var(--text-title)] font-bold">
@@ -322,8 +330,12 @@ export function AssessmentResultScreen({
 
 function AnalyticsHeadline({
   analytics,
+  aiInterpretation,
+  aiSource,
 }: {
   analytics: NonNullable<AssessmentFlow["analytics"]>;
+  aiInterpretation: string;
+  aiSource: "ai" | "rule-based";
 }) {
   const { lang } = useLanguage();
   const overallStatus = riskLabel(analytics.riskCategory);
@@ -332,17 +344,25 @@ function AnalyticsHeadline({
     `profile.${analytics.profile}.title`,
     profileCopy[analytics.profile].title,
   );
-  const interpretation = clinicalText(
-    lang,
-    `profile.${analytics.profile}.interpretation`,
-    analytics.interpretation,
-  );
+  const interpretation =
+    aiSource === "ai" && aiInterpretation
+      ? aiInterpretation
+      : clinicalText(
+          lang,
+          `profile.${analytics.profile}.interpretation`,
+          analytics.interpretation,
+        );
 
   return (
     <>
       <p className="text-[length:var(--text-title)] font-bold">{overallStatus}</p>
       <p className="font-bold">{profileTitle}</p>
       <p className="text-[var(--muted)]">{interpretation}</p>
+      {aiSource === "ai" && (
+        <p className="text-[length:var(--text-caption)] text-[var(--muted)]">
+          AI-enhanced analysis
+        </p>
+      )}
       <div>
         <ListenButton text={`${overallStatus}. ${profileTitle}. ${interpretation}`} />
       </div>
