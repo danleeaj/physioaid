@@ -112,6 +112,8 @@ export const shellCopy = {
   },
   test: {
     doneBackToHub: "Done — back to hub",
+    continueToNext: "Continue",
+    pause: "Pause",
   },
   result: {
     title: "Assessment complete",

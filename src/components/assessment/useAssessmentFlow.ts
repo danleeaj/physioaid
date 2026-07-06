@@ -54,6 +54,16 @@ export type AssessmentView =
 
 const lastQuestionIndex = QUESTIONNAIRE_LENGTH - 1;
 
+/** Fixed check order the hub renders in — auto-advance walks this list. */
+const TEST_ORDER: TestId[] = [
+  "self_confidence",
+  "sit_to_stand",
+  "walk",
+  "floor_rising",
+  "timed_up_and_go",
+  "functional_reach",
+];
+
 /** UI baselines for screens that render metrics before any exist. Every
  * setter path overwrites `completionStatus`/`source` before anything is
  * persisted, so these values never masquerade as results. */
@@ -268,14 +278,8 @@ export function useAssessmentFlow(options: {
     setView("precheck");
   }
 
-  function openCard(id: HubCardId) {
-    if (id === "exercise") {
-      setView("exercise");
-      return;
-    }
-    const card = hubCards.find((item) => item.id === id);
-    if (!card || card.state === "locked") return;
-
+  /** Shared open logic once a card is known to be unlocked. */
+  function openTestById(id: TestId) {
     if (id === "self_confidence") {
       setDraft((current) => ({
         ...current,
@@ -307,19 +311,66 @@ export function useAssessmentFlow(options: {
     setView(`test:${id}`);
   }
 
+  function openCard(id: HubCardId) {
+    if (id === "exercise") {
+      setView("exercise");
+      return;
+    }
+    const card = hubCards.find((item) => item.id === id);
+    if (!card || card.state === "locked") return;
+    openTestById(id as TestId);
+  }
+
+  /**
+   * Next check the participant still needs to do, walking the fixed order
+   * from `afterIndex` (exclusive) using `forDraft` — passed explicitly
+   * rather than reading the hook's `draft` so callers that just mutated the
+   * draft (setDraft is async) see the up-to-date lock/complete state.
+   */
+  function findNextTest(afterIndex: number, forDraft: SessionDraft): TestId | null {
+    const cards = deriveHubCards(forDraft, { exerciseDoneToday });
+    for (let i = afterIndex + 1; i < TEST_ORDER.length; i++) {
+      const id = TEST_ORDER[i];
+      const card = cards.find((item) => item.id === id);
+      if (card && (card.state === "not_started" || card.state === "in_progress")) {
+        return id;
+      }
+    }
+    return null;
+  }
+
+  /** Read-only peek used by test screens to decide their footer label. */
+  function nextTestAfter(id: TestId): TestId | null {
+    return findNextTest(TEST_ORDER.indexOf(id), draft);
+  }
+
+  /**
+   * Completed `id` — open the next check that still needs doing, or pause
+   * at the hub if nothing does (chain finished, or the rest are locked).
+   */
+  function continueFromTest(id: TestId, forDraft: SessionDraft = draft) {
+    const next = findNextTest(TEST_ORDER.indexOf(id), forDraft);
+    if (next) {
+      openTestById(next);
+    } else {
+      setView("hub");
+    }
+  }
+
   // --- Questionnaire stepping -------------------------------------------------
 
   function advanceQuestion() {
-    setDraft((current) => {
-      const next = Math.min(
-        current.questionnaireIndex + 1,
-        QUESTIONNAIRE_LENGTH,
-      );
-      return { ...current, questionnaireIndex: next };
-    });
+    const nextIndex = Math.min(
+      draft.questionnaireIndex + 1,
+      QUESTIONNAIRE_LENGTH,
+    );
+    setDraft((current) => ({ ...current, questionnaireIndex: nextIndex }));
     if (draft.questionnaireIndex >= lastQuestionIndex) {
-      // Confirmed the last answer — the questionnaire is complete.
-      setView("hub");
+      // Confirmed the last answer — auto-advance to the next open check.
+      continueFromTest("self_confidence", {
+        ...draft,
+        questionnaireIndex: nextIndex,
+      });
     }
   }
 
@@ -481,6 +532,8 @@ export function useAssessmentFlow(options: {
     openCard,
     openPrecheck,
     returnToHub,
+    nextTestAfter,
+    continueFromTest,
     finish,
     startOver,
     loadDemo,
