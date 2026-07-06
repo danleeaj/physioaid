@@ -5,6 +5,7 @@ import {
   ChevronRight,
   HeartHandshake,
   LogOut,
+  Phone,
   ShieldCheck,
   UserRound,
 } from "lucide-react";
@@ -116,6 +117,16 @@ export function ProfileScreen({
               {profile?.supportContact?.name ?? copy.notConnected}
             </span>
           </span>
+          {profile?.supportContact?.phone && (
+            <a
+              aria-label={copy.callCarePartner}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--primary-soft)] text-[var(--primary)]"
+              href={`tel:${profile.supportContact.phone}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Phone aria-hidden size={18} />
+            </a>
+          )}
           <ChevronRight aria-hidden className="shrink-0 text-[var(--muted)]" size={20} />
         </button>
 

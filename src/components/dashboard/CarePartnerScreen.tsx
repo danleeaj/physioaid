@@ -1,6 +1,6 @@
 "use client";
 
-import { HeartHandshake, MessageCircle } from "lucide-react";
+import { HeartHandshake, MessageCircle, Phone } from "lucide-react";
 import { useState } from "react";
 import { shellCopy } from "@/components/layout/copy";
 import { TopBar } from "@/components/layout/TopBar";
@@ -67,15 +67,26 @@ export function CarePartnerScreen({ onBack }: { onBack: () => void }) {
           />
         </label>
 
-        <button
-          className="primary-action flex w-full items-center justify-center gap-2"
-          disabled={!phone.trim()}
-          onClick={handleSend}
-          type="button"
-        >
-          <MessageCircle aria-hidden size={20} />
-          {copy.shareWhatsApp}
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="primary-action flex flex-1 items-center justify-center gap-2"
+            disabled={!phone.trim()}
+            onClick={handleSend}
+            type="button"
+          >
+            <MessageCircle aria-hidden size={20} />
+            {copy.shareWhatsApp}
+          </button>
+
+          <a
+            className="secondary-action flex flex-1 items-center justify-center gap-2"
+            href={phone.trim() ? `tel:${normalizePhone(phone)}` : undefined}
+            aria-disabled={!phone.trim() || undefined}
+          >
+            <Phone aria-hidden size={20} />
+            {copy.callCarePartner}
+          </a>
+        </div>
 
         {sent && (
           <p
