@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { HistoryEntry } from "@/components/dashboard/demo-display-data";
 import { shellCopy } from "@/components/layout/copy";
 import { TopBar } from "@/components/layout/TopBar";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { DECISION_SUPPORT_DISCLAIMER } from "@/config/clinical-config";
 import { saveSessionForReport } from "@/lib/report-session";
 import type { AssessmentSession } from "@/types/assessment";
@@ -21,6 +22,7 @@ export function HistoryDetailScreen({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const { lang } = useLanguage();
 
   function openReport() {
     if (session) {
@@ -40,7 +42,7 @@ export function HistoryDetailScreen({
 
   return (
     <>
-      <TopBar onBack={onBack} title={shellCopy.history.detailTitle} />
+      <TopBar onBack={onBack} title={shellCopy[lang].history.detailTitle} />
       <div className="app-content pb-[calc(20px+env(safe-area-inset-bottom))]">
         <section className="app-card app-card--hero grid gap-2">
           <p className="flex items-center gap-2 text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
@@ -49,7 +51,7 @@ export function HistoryDetailScreen({
             {entry.sample && (
               <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-muted)] px-2 py-0.5">
                 <FlaskConical aria-hidden size={12} />
-                {shellCopy.history.samplePill}
+                {shellCopy[lang].history.samplePill}
               </span>
             )}
           </p>
@@ -90,7 +92,7 @@ export function HistoryDetailScreen({
         {/* Clinician handoff — physio / OT / doctor opens the printable report */}
         <button className="secondary-action w-full" onClick={openReport} type="button">
           <FileText aria-hidden size={20} />
-          {shellCopy.result.openReport}
+          {shellCopy[lang].result.openReport}
         </button>
 
         <p className="text-[length:var(--text-label)] text-[var(--muted)]">

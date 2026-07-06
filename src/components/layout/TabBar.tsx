@@ -1,15 +1,10 @@
 "use client";
 
 import { BookOpen, ClipboardCheck, Users } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { shellCopy } from "@/components/layout/copy";
 
 export type ShellTab = "assessment" | "community" | "resources";
-
-const tabs: { id: ShellTab; label: string; Icon: typeof ClipboardCheck }[] = [
-  { id: "assessment", label: shellCopy.tabs.assessment, Icon: ClipboardCheck },
-  { id: "community", label: shellCopy.tabs.community, Icon: Users },
-  { id: "resources", label: shellCopy.tabs.resources, Icon: BookOpen },
-];
 
 /** Fixed bottom tab bar — visible only on the three main signed-in tabs. */
 export function TabBar({
@@ -19,6 +14,12 @@ export function TabBar({
   active: ShellTab;
   onSelect: (tab: ShellTab) => void;
 }) {
+  const { lang } = useLanguage();
+  const tabs: { id: ShellTab; label: string; Icon: typeof ClipboardCheck }[] = [
+    { id: "assessment", label: shellCopy[lang].tabs.assessment, Icon: ClipboardCheck },
+    { id: "community", label: shellCopy[lang].tabs.community, Icon: Users },
+    { id: "resources", label: shellCopy[lang].tabs.resources, Icon: BookOpen },
+  ];
   return (
     <nav aria-label="Main" className="tab-bar">
       {tabs.map(({ id, label, Icon }) => (

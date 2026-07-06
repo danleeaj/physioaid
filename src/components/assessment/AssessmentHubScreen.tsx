@@ -23,11 +23,9 @@ import { LangSwitch } from "@/components/i18n/LangSwitch";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { ConfirmDialog } from "@/components/layout/ConfirmDialog";
 import { TopBar } from "@/components/layout/TopBar";
-import { shellCopy } from "@/components/layout/copy";
+import { shellCopy, type ShellCopy } from "@/components/layout/copy";
 import type { HubCard } from "@/lib/assessment/hub-state";
 import type { TestId } from "@/types/assessment";
-
-const copy = shellCopy.hub;
 
 const testIcons: Record<TestId, LucideIcon> = {
   self_confidence: Smile,
@@ -39,7 +37,10 @@ const testIcons: Record<TestId, LucideIcon> = {
 };
 
 /** Status line — icon + words, never colour-only. */
-function statusFor(card: HubCard): { icon: LucideIcon; text: string } {
+function statusFor(
+  card: HubCard,
+  copy: ShellCopy["hub"],
+): { icon: LucideIcon; text: string } {
   switch (card.state) {
     case "locked":
       return {
@@ -70,7 +71,7 @@ function statusFor(card: HubCard): { icon: LucideIcon; text: string } {
   }
 }
 
-function actionLabelFor(card: HubCard): string | null {
+function actionLabelFor(card: HubCard, copy: ShellCopy["hub"]): string | null {
   switch (card.state) {
     case "locked":
       return null;
@@ -152,7 +153,8 @@ export function AssessmentHubScreen({
   demoMode: boolean;
   onExit: () => void;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const copy = shellCopy[lang].hub;
   const [confirmStartOver, setConfirmStartOver] = useState(false);
 
   const { hubCards, precheckComplete, canFinish, demoLoaded } = flow;
@@ -181,7 +183,7 @@ export function AssessmentHubScreen({
         right={
           <button className="link-action shrink-0" onClick={onExit} type="button">
             <X aria-hidden size={18} />
-            {shellCopy.flow.exit}
+            {shellCopy[lang].flow.exit}
           </button>
         }
         title={copy.title}
@@ -204,11 +206,11 @@ export function AssessmentHubScreen({
                 aria-live="polite"
                 className="text-[length:var(--text-label)] text-[var(--muted-strong)]"
               >
-                {shellCopy.flow.sampleLoaded}
+                {shellCopy[lang].flow.sampleLoaded}
               </p>
             ) : (
               <button className="link-action" onClick={flow.loadDemo} type="button">
-                {shellCopy.flow.loadSample}
+                {shellCopy[lang].flow.loadSample}
               </button>
             )}
           </div>
@@ -231,8 +233,8 @@ export function AssessmentHubScreen({
         <div className="grid gap-2">
           {testCards.map((card) => {
             const testId = card.id as TestId;
-            const status = statusFor(card);
-            const actionLabel = actionLabelFor(card);
+            const status = statusFor(card, copy);
+            const actionLabel = actionLabelFor(card, copy);
             return (
               <HubRow
                 actionLabel={actionLabel}
@@ -255,11 +257,11 @@ export function AssessmentHubScreen({
         </h2>
         {exerciseCard && (
           <HubRow
-            actionLabel={actionLabelFor(exerciseCard)}
+            actionLabel={actionLabelFor(exerciseCard, copy)}
             icon={Dumbbell}
             onAction={() => flow.openCard("exercise")}
-            statusIcon={statusFor(exerciseCard).icon}
-            statusText={statusFor(exerciseCard).text}
+            statusIcon={statusFor(exerciseCard, copy).icon}
+            statusText={statusFor(exerciseCard, copy).text}
             support={copy.exerciseSupport}
             title={copy.exerciseTitle}
           />

@@ -37,8 +37,6 @@ import type {
   RiskCategory,
 } from "@/types/assessment";
 
-const copy = shellCopy.result;
-
 const STOPPED_NOTICE =
   "The assessment stopped before one or more higher-risk tests. This summary uses completed screening data only.";
 
@@ -80,6 +78,7 @@ export function AssessmentResultScreen({
 }) {
   const router = useRouter();
   const { t, lang } = useLanguage();
+  const copy = shellCopy[lang].result;
   const { user } = useAuth();
   const { profile } = useUserProfile();
   const [saved, setSaved] = useState(false);
@@ -92,10 +91,10 @@ export function AssessmentResultScreen({
   const hasFloorRising = isRecordedMetric(draft.floorRising, draft.demoLoaded);
 
   const notDone: string[] = [
-    !hasQuestionnaire && shellCopy.hub.tests.self_confidence,
-    !hasChairStand && shellCopy.hub.tests.sit_to_stand,
-    !hasWalk && shellCopy.hub.tests.walk,
-    !hasFloorRising && shellCopy.hub.tests.floor_rising,
+    !hasQuestionnaire && shellCopy[lang].hub.tests.self_confidence,
+    !hasChairStand && shellCopy[lang].hub.tests.sit_to_stand,
+    !hasWalk && shellCopy[lang].hub.tests.walk,
+    !hasFloorRising && shellCopy[lang].hub.tests.floor_rising,
   ].filter((label) => typeof label === "string");
 
   // Real name from the profile, or no name line at all — never a fabricated

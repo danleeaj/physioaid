@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import { shellCopy } from "@/components/layout/copy";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import {
   buildComputedTrendSummary,
   computeTrends,
@@ -13,8 +14,6 @@ import {
   type TrendReport,
 } from "@/lib/analytics/trends";
 import type { AssessmentSession } from "@/types/assessment";
-
-const copy = shellCopy.trends;
 
 /** Direction is always icon + word — never color-only. */
 const DIRECTION_ICONS: Record<
@@ -66,6 +65,8 @@ function buildSummaryPayload(report: TrendReport, computedFallback: string) {
  */
 export function TrendSection({ sessions }: { sessions: AssessmentSession[] }) {
   const { profile } = useUserProfile();
+  const { lang } = useLanguage();
+  const copy = shellCopy[lang].trends;
   const report = useMemo(() => computeTrends(sessions), [sessions]);
   const computedSummary = useMemo(
     () => (report ? buildComputedTrendSummary(report) : ""),

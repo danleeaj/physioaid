@@ -10,8 +10,6 @@ import { loadStoredTextSize } from "@/lib/preferences";
 import { PLANNING_AREAS } from "@/lib/planning-areas";
 import type { AgeGroup, TextSize, UserProfile } from "@/types/profile";
 
-const copy = shellCopy.onboarding;
-
 export const AGE_GROUP_OPTIONS: { id: AgeGroup; label: string }[] = [
   { id: "under60", label: "Under 60" },
   { id: "60s", label: "60s" },
@@ -51,6 +49,7 @@ export function AboutYouStep({
   onContinue: (fields: AboutYouFields) => void;
 }) {
   const { lang } = useLanguage();
+  const copy = shellCopy[lang].onboarding;
   const { setTextSize: applyTextSizePreference } = useUserProfile();
   const [displayName, setDisplayName] = useState(profile?.displayName ?? "");
   const [ageGroup, setAgeGroup] = useState<AgeGroup | null>(
