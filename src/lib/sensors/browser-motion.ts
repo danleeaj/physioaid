@@ -52,6 +52,23 @@ export async function requestMotionPermission(): Promise<MotionSupportStatus> {
   };
 }
 
+// ponytail: defensive helpers from stash — guards against NaN/Infinity on noisy hardware reads
+function toFiniteNumber(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function toFiniteVector(vector: DeviceMotionEventAcceleration | null) {
+  const x = toFiniteNumber(vector?.x);
+  const y = toFiniteNumber(vector?.y);
+  const z = toFiniteNumber(vector?.z);
+
+  if (x === null && y === null && z === null) {
+    return null;
+  }
+
+  return { x: x ?? 0, y: y ?? 0, z: z ?? 0 };
+}
+
 /**
  * Subscribes to real `devicemotion` events and reports each sample.
  * Returns an unsubscribe function. No-op (never calls back) if the
@@ -66,13 +83,10 @@ export function startMotionCapture(
 
   const handleMotion = (event: DeviceMotionEvent) => {
     const acceleration =
-      event.accelerationIncludingGravity ?? event.acceleration;
-    if (
-      !acceleration ||
-      acceleration.x === null ||
-      acceleration.y === null ||
-      acceleration.z === null
-    ) {
+      toFiniteVector(event.accelerationIncludingGravity) ??
+      toFiniteVector(event.acceleration);
+
+    if (!acceleration) {
       return;
     }
 
@@ -81,9 +95,9 @@ export function startMotionCapture(
       accelerationX: acceleration.x,
       accelerationY: acceleration.y,
       accelerationZ: acceleration.z,
-      rotationAlpha: event.rotationRate?.alpha ?? undefined,
-      rotationBeta: event.rotationRate?.beta ?? undefined,
-      rotationGamma: event.rotationRate?.gamma ?? undefined,
+      rotationAlpha: toFiniteNumber(event.rotationRate?.alpha) ?? undefined,
+      rotationBeta: toFiniteNumber(event.rotationRate?.beta) ?? undefined,
+      rotationGamma: toFiniteNumber(event.rotationRate?.gamma) ?? undefined,
     });
   };
 

@@ -28,6 +28,11 @@ type TestStartPanelProps = {
   safetyInstruction: string;
   primaryLabel: string;
   /**
+   * Optional start hook for live detectors. Return false to keep the panel
+   * ready, for example when a browser permission request is denied.
+   */
+  onRunStart?: () => boolean | void | Promise<boolean | void>;
+  /**
    * Fires exactly once per run, when the run finishes (Stop pressed or the
    * countdown completes). Metric-injection semantics match the old
    * tap-to-complete behaviour. Receives the real devicemotion samples
@@ -126,6 +131,7 @@ export function TestStartPanel({
   title,
   safetyInstruction,
   primaryLabel,
+  onRunStart,
   onPrimary,
   statusItems,
   resultItems = [],

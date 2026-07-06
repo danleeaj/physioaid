@@ -9,19 +9,33 @@ import {
 } from "@/lib/sensors/browser-motion";
 import type { MotionSample, MotionSupportStatus } from "@/types/motion";
 
+// ponytail: SSR-safe placeholder — real check runs in useEffect to avoid hydration mismatch
+const initialMotionStatus: MotionSupportStatus = {
+  supported: false,
+  permissionState: "unknown",
+  requiresUserGesture: false,
+  message: "Checking browser motion sensor support.",
+};
+
 export function MotionSensorStatus({
   onStatusChange,
 }: {
   /** Reports the live permission state so parent screens can show it honestly. */
   onStatusChange?: (status: MotionSupportStatus) => void;
 } = {}) {
-  const [status, setStatus] = useState<MotionSupportStatus>(() =>
-    getMotionSupportStatus(),
-  );
+  const [status, setStatus] =
+    useState<MotionSupportStatus>(initialMotionStatus);
   const [listening, setListening] = useState(false);
   const [sampleCount, setSampleCount] = useState(0);
   const [lastSample, setLastSample] = useState<MotionSample>();
   const stopCaptureRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setStatus(getMotionSupportStatus());
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   useEffect(() => {
     onStatusChange?.(status);
