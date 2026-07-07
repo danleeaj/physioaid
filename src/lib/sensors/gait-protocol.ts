@@ -136,6 +136,22 @@ export function mean(values: number[]): number {
   return values.reduce((total, value) => total + value, 0) / values.length;
 }
 
+export function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const midpoint = Math.floor(sorted.length / 2);
+
+  return sorted.length % 2 === 0
+    ? (sorted[midpoint - 1] + sorted[midpoint]) / 2
+    : sorted[midpoint];
+}
+
+export function medianAbsoluteDeviation(values: number[]): number {
+  if (values.length === 0) return 0;
+  const center = median(values);
+  return median(values.map((value) => Math.abs(value - center)));
+}
+
 export function standardDeviation(values: number[]): number {
   if (values.length === 0) return 0;
   const average = mean(values);

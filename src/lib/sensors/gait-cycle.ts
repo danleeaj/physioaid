@@ -3,8 +3,9 @@ import {
   estimateSampleRateHz,
   gaitProtocol,
   mean,
+  median,
+  medianAbsoluteDeviation,
   movingAverage,
-  standardDeviation,
   validMotionSamples,
 } from "@/lib/sensors/gait-protocol";
 import type { MotionSample } from "@/types/motion";
@@ -30,7 +31,7 @@ export function detectGaitCycles(
   const averageMagnitude = mean(magnitudes);
   const centeredSignal = magnitudes.map((value) => value - averageMagnitude);
   const smoothedSignal = movingAverage(centeredSignal, 2);
-  const threshold = Math.max(0.12, standardDeviation(smoothedSignal) * 0.45);
+  const threshold = robustPeakThreshold(smoothedSignal);
   const steps = detectStepPeaks(samples, smoothedSignal, threshold);
 
   return {
@@ -40,6 +41,14 @@ export function detectGaitCycles(
     smoothedSignal,
     sampleRateHz: estimateSampleRateHz(samples),
   };
+}
+
+function robustPeakThreshold(signal: number[]): number {
+  const absoluteSignal = signal.map(Math.abs);
+  const baseline = median(absoluteSignal);
+  const spread = medianAbsoluteDeviation(absoluteSignal);
+
+  return Math.max(0.12, baseline + spread * 0.5);
 }
 
 export function stepIntervalsSeconds(steps: GaitStep[]): number[] {

@@ -16,13 +16,28 @@ import {
   estimateStepLengthMeters,
 } from "@/lib/sensors/step-detection";
 import type { AssessmentFlow } from "@/components/assessment/useAssessmentFlow";
+import type { FunctionalTestGate } from "@/lib/functional-tests/gates";
+import type { MotionMetrics } from "@/types/assessment";
 import type { MotionSupportStatus } from "@/types/motion";
 
 function formatOptionalNumber(value: number | undefined, suffix: string) {
   return value === undefined ? "Not measured" : `${value}${suffix}`;
 }
 
-export function GaitScreen({ flow }: { flow: AssessmentFlow }) {
+export type GaitScreenFlow = Pick<
+  AssessmentFlow,
+  | "gaitPhase"
+  | "setGaitPhase"
+  | "setMotion"
+  | "markGaitStoppedOrUnstable"
+  | "startGaitCountdown"
+> & {
+  chairStandGate: FunctionalTestGate;
+  motion: MotionMetrics;
+  motionGate: FunctionalTestGate;
+};
+
+export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
   const {
     gaitPhase,
     setGaitPhase,

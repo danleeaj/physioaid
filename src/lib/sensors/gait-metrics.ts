@@ -1,9 +1,10 @@
 import { detectGaitCycles, type GaitStep } from "@/lib/sensors/gait-cycle";
 import {
   clamp01,
-  coefficientOfVariation,
   gaitProtocol,
   mean,
+  median,
+  medianAbsoluteDeviation,
   rms,
   validMotionSamples,
   validateGaitCapture,
@@ -53,9 +54,12 @@ export function summarizeGaitMetrics(input: {
   }
 
   const intervals = cycles.stepIntervalsSeconds;
+  const rhythmIntervals = robustStepIntervals(intervals);
   const stepTimeMeanSeconds = Number(mean(intervals).toFixed(2));
-  const stepTimeVariability = clamp01(coefficientOfVariation(intervals));
-  const rhythmConsistency = scoreRhythmConsistency(intervals);
+  const stepTimeVariability = clamp01(
+    robustCoefficientOfVariation(rhythmIntervals),
+  );
+  const rhythmConsistency = scoreRhythmConsistency(rhythmIntervals);
   const jerkVariability = scoreJerkVariability(samples, cycles.smoothedSignal);
   const rotationVariability = scoreRotationVariability(samples);
   const stabilityScore = scoreStability({
@@ -108,13 +112,34 @@ function stoppedMetrics(): DetailedGaitMetrics {
 
 function scoreRhythmConsistency(intervals: number[]): number {
   if (intervals.length < 2) return 0;
-  const intervalVariation = coefficientOfVariation(intervals);
-  const averageInterval = mean(intervals);
+  const intervalVariation = robustCoefficientOfVariation(intervals);
+  const averageInterval = median(intervals);
   const stepFrequencyHz = averageInterval > 0 ? 1 / averageInterval : 0;
   const cadencePenalty =
     stepFrequencyHz < 0.7 || stepFrequencyHz > 3 ? 0.2 : 0;
 
   return clamp01(1 - intervalVariation / 0.35 - cadencePenalty);
+}
+
+function robustStepIntervals(intervals: number[]): number[] {
+  if (intervals.length < 6) return intervals;
+  const center = median(intervals);
+  if (center <= 0) return intervals;
+
+  const filtered = intervals.filter((interval) => {
+    const ratio = interval / center;
+    return ratio >= 0.65 && ratio <= 1.55;
+  });
+
+  return filtered.length >= Math.max(3, intervals.length * 0.45)
+    ? filtered
+    : intervals;
+}
+
+function robustCoefficientOfVariation(values: number[]): number {
+  const center = median(values);
+  if (center === 0) return 1;
+  return (medianAbsoluteDeviation(values) * 1.4826) / Math.abs(center);
 }
 
 function scoreJerkVariability(
@@ -157,10 +182,7 @@ function scoreStability(input: {
 }): number {
   const amplitudePenalty =
     input.steps.length >= 3
-      ? clamp01(
-          coefficientOfVariation(input.steps.map((step) => step.amplitude)) /
-            0.8,
-        )
+      ? clamp01(robustAmplitudeVariation(input.steps) / 0.8)
       : 0.35;
 
   return clamp01(
@@ -169,6 +191,13 @@ function scoreStability(input: {
         input.rotationVariability * 0.25 +
         input.jerkVariability * 0.25),
   );
+}
+
+function robustAmplitudeVariation(steps: GaitStep[]): number {
+  const amplitudes = steps.map((step) => step.amplitude);
+  const center = median(amplitudes);
+  if (center === 0) return 1;
+  return (medianAbsoluteDeviation(amplitudes) * 1.4826) / Math.abs(center);
 }
 
 function scoreCycleQuality(input: {

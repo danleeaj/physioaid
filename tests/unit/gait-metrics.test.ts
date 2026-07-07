@@ -18,6 +18,47 @@ function regularWalk(seconds: number, hz = 50, stepHz = 2): MotionSample[] {
   });
 }
 
+function walkFromStepPattern(
+  intervalsSeconds: number[],
+  options?: { amplitudes?: number[]; stepLengthMeters?: number },
+): MotionSample[] {
+  const hz = 50;
+  const seconds = 25;
+  const stepTimes: { timestamp: number; amplitude: number }[] = [];
+  let timestamp = 0.3;
+
+  for (let index = 0; index <= intervalsSeconds.length; index += 1) {
+    stepTimes.push({
+      amplitude: options?.amplitudes?.[index] ?? 1.1,
+      timestamp,
+    });
+    timestamp += intervalsSeconds[index] ?? 0.53;
+  }
+
+  return Array.from({ length: Math.floor(seconds * hz) }, (_, index) => {
+    const t = index / hz;
+    const phase = 2 * Math.PI * 1.88 * t;
+    const pocketSignal = stepTimes.reduce((total, step) => {
+      const distanceFromStep = t - step.timestamp;
+      return (
+        total +
+        Math.exp(-(distanceFromStep ** 2) / (2 * 0.035 ** 2)) *
+          step.amplitude
+      );
+    }, 0);
+
+    return {
+      timestampMs: t * 1000,
+      accelerationX: Math.sin(phase) * 0.2,
+      accelerationY: Math.cos(phase) * 0.1,
+      accelerationZ: 9.81 + pocketSignal,
+      rotationAlpha: Math.sin(phase) * 8,
+      rotationBeta: Math.cos(phase) * 5,
+      rotationGamma: Math.sin(phase) * 3,
+    };
+  });
+}
+
 function irregularWalk(): MotionSample[] {
   const samples: MotionSample[] = [];
   let timestampMs = 0;
@@ -78,6 +119,38 @@ describe("summarizeGaitMetrics", () => {
 
     expect(irregular.completionStatus).toBe("completed");
     expect(irregular.rhythmConsistency).toBeLessThan(regular.rhythmConsistency);
+  });
+
+  test("does not collapse rhythm for normal cadence with pocket interval artifacts", () => {
+    const intervals = Array.from({ length: 46 }, (_, index) =>
+      index % 4 === 0 ? 0.31 : index % 4 === 1 ? 0.89 : 0.47,
+    );
+    const metrics = summarizeGaitMetrics({
+      durationSeconds: 25,
+      samples: walkFromStepPattern(intervals),
+      stepLengthMeters: 0.697,
+    });
+
+    expect(metrics.completionStatus).toBe("completed");
+    expect(metrics.stepCount).toBeGreaterThanOrEqual(45);
+    expect(metrics.cadenceStepsPerMinute).toBeGreaterThanOrEqual(108);
+    expect(metrics.rhythmConsistency).toBeGreaterThan(0.55);
+  });
+
+  test("does not fail stability from a few loose-pocket amplitude spikes", () => {
+    const intervals = Array.from({ length: 46 }, () => 0.53);
+    const amplitudes = Array.from({ length: 47 }, (_, index) =>
+      index % 10 === 0 ? 3.4 : index % 13 === 0 ? 0.35 : 1.1,
+    );
+    const metrics = summarizeGaitMetrics({
+      durationSeconds: 25,
+      samples: walkFromStepPattern(intervals, { amplitudes }),
+      stepLengthMeters: 0.697,
+    });
+
+    expect(metrics.completionStatus).toBe("completed");
+    expect(metrics.cadenceStepsPerMinute).toBeGreaterThanOrEqual(100);
+    expect(metrics.stabilityScore).toBeGreaterThan(0.55);
   });
 
   test("uses explicit course distance over estimated step length for speed", () => {
