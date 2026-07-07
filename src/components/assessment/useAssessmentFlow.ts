@@ -45,6 +45,7 @@ import type { MotionSample } from "@/types/motion";
 export type { QuestionnaireDraft };
 
 export type PhysicalTestPhase = "demo" | "start" | "manual";
+type StepLengthEstimateMethod = "height_regression" | "calibration_walk";
 
 /** The hub's navigation states — replaces the old linear step index. */
 export type AssessmentView =
@@ -434,12 +435,14 @@ export function useAssessmentFlow(options: {
     samples: MotionSample[] = [],
     elapsedSeconds = 0,
     stepLengthMeters?: number,
+    stepLengthEstimateMethod: StepLengthEstimateMethod = "height_regression",
   ) {
     setMotion(
       summarizeMotionSamples({
         samples,
         durationSeconds: elapsedSeconds,
         stepLengthMeters,
+        stepLengthEstimateMethod,
       }),
     );
   }
