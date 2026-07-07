@@ -3,7 +3,7 @@ import type { FunctionalTestGate } from "@/lib/functional-tests/gates";
 import type { MotionMetrics } from "@/types/assessment";
 import type { MotionSample } from "@/types/motion";
 
-export const DIRECT_GAIT_TEST_VERSION = "gait-test-2026.07.07.1";
+export const DIRECT_GAIT_TEST_VERSION = "gait-test-2026.07.07.2";
 
 export type DirectGaitState = {
   gaitPhase: "demo" | "start" | "manual";

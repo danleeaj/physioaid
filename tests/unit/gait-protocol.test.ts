@@ -30,10 +30,10 @@ function walkingSamples(
 }
 
 describe("gaitProtocol", () => {
-  test("uses a 25 second target with a 20 to 30 second accepted window", () => {
-    expect(gaitProtocol.targetDurationSeconds).toBe(25);
-    expect(gaitProtocol.minDurationSeconds).toBe(20);
-    expect(gaitProtocol.maxDurationSeconds).toBe(30);
+  test("uses a 15 second target with a 12 to 18 second accepted window", () => {
+    expect(gaitProtocol.targetDurationSeconds).toBe(15);
+    expect(gaitProtocol.minDurationSeconds).toBe(12);
+    expect(gaitProtocol.maxDurationSeconds).toBe(18);
   });
 });
 
@@ -54,10 +54,10 @@ describe("validMotionSamples", () => {
 });
 
 describe("validateGaitCapture", () => {
-  test("accepts a normal 25 second active walk", () => {
+  test("accepts a normal 15 second active walk", () => {
     const result = validateGaitCapture({
-      durationSeconds: 25,
-      samples: walkingSamples(25),
+      durationSeconds: 15,
+      samples: walkingSamples(15),
     });
 
     expect(result.usable).toBe(true);
@@ -65,20 +65,20 @@ describe("validateGaitCapture", () => {
     expect(result.sampleRateHz).toBeGreaterThanOrEqual(45);
   });
 
-  test("rejects active walks shorter than 20 seconds", () => {
+  test("rejects active walks shorter than 12 seconds", () => {
     const result = validateGaitCapture({
-      durationSeconds: 19.9,
-      samples: walkingSamples(19.9),
+      durationSeconds: 11.9,
+      samples: walkingSamples(11.9),
     });
 
     expect(result.usable).toBe(false);
     expect(result.issue).toBe("duration_too_short");
   });
 
-  test("rejects active walks longer than 30 seconds", () => {
+  test("rejects active walks longer than 18 seconds", () => {
     const result = validateGaitCapture({
-      durationSeconds: 30.5,
-      samples: walkingSamples(30.5),
+      durationSeconds: 18.5,
+      samples: walkingSamples(18.5),
     });
 
     expect(result.usable).toBe(false);
@@ -87,8 +87,8 @@ describe("validateGaitCapture", () => {
 
   test("rejects low sample-rate captures", () => {
     const result = validateGaitCapture({
-      durationSeconds: 25,
-      samples: walkingSamples(25, 10),
+      durationSeconds: 15,
+      samples: walkingSamples(15, 19),
     });
 
     expect(result.usable).toBe(false);
@@ -96,7 +96,7 @@ describe("validateGaitCapture", () => {
   });
 
   test("rejects static samples", () => {
-    const staticSamples = walkingSamples(25).map((sample) => ({
+    const staticSamples = walkingSamples(15).map((sample) => ({
       ...sample,
       accelerationX: 0,
       accelerationY: 0,
@@ -107,7 +107,7 @@ describe("validateGaitCapture", () => {
     }));
 
     const result = validateGaitCapture({
-      durationSeconds: 25,
+      durationSeconds: 15,
       samples: staticSamples,
     });
 

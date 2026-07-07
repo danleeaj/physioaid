@@ -427,7 +427,7 @@ export function useAssessmentFlow(options: {
 
   /**
    * Fires when the guided walk finishes. Uses real devicemotion samples
-   * captured during the active 25 second pocket walk. Missing or unusable
+   * captured during the active timed pocket walk. Missing or unusable
    * samples produce a stopped/unavailable gait result so the flow keeps its
    * safety gate instead of fabricating a passing sensor result.
    */

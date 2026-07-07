@@ -24,14 +24,14 @@ function regularWalk(seconds: number, hz = 50): MotionSample[] {
 describe("summarizeMotionSamples", () => {
   test("maps detailed gait metrics onto MotionMetrics", () => {
     const metrics = summarizeMotionSamples({
-      durationSeconds: 25,
-      samples: regularWalk(25),
+      durationSeconds: 15,
+      samples: regularWalk(15),
       stepLengthMeters: 0.68,
     });
 
     expect(metrics.completionStatus).toBe("completed");
     expect(metrics.source).toBe("accelerometer");
-    expect(metrics.stepCount).toBeGreaterThanOrEqual(45);
+    expect(metrics.stepCount).toBeGreaterThanOrEqual(25);
     expect(metrics.cadenceStepsPerMinute).toBeGreaterThan(100);
     expect(metrics.rhythmConsistency).toBeGreaterThan(0.8);
     expect(metrics.stabilityScore).toBeGreaterThan(0.55);
@@ -47,8 +47,8 @@ describe("summarizeMotionSamples", () => {
 
   test("labels calibrated step length estimates", () => {
     const metrics = summarizeMotionSamples({
-      durationSeconds: 25,
-      samples: regularWalk(25),
+      durationSeconds: 15,
+      samples: regularWalk(15),
       stepLengthMeters: 0.62,
       stepLengthEstimateMethod: "calibration_walk",
     });
@@ -59,7 +59,7 @@ describe("summarizeMotionSamples", () => {
   });
 
   test("maps reduced reconstruction when gyro is absent", () => {
-    const samples = regularWalk(25).map((sample) => ({
+    const samples = regularWalk(15).map((sample) => ({
       timestampMs: sample.timestampMs,
       accelerationX: sample.accelerationX,
       accelerationY: sample.accelerationY,
@@ -67,7 +67,7 @@ describe("summarizeMotionSamples", () => {
     }));
 
     const metrics = summarizeMotionSamples({
-      durationSeconds: 25,
+      durationSeconds: 15,
       samples,
       stepLengthMeters: 0.68,
     });
@@ -81,9 +81,9 @@ describe("summarizeMotionSamples", () => {
 
   test("uses explicit distance as the gait speed source when provided", () => {
     const metrics = summarizeMotionSamples({
-      distanceMeters: 20,
-      durationSeconds: 25,
-      samples: regularWalk(25),
+      distanceMeters: 12,
+      durationSeconds: 15,
+      samples: regularWalk(15),
       stepLengthMeters: 0.68,
     });
 
@@ -93,7 +93,7 @@ describe("summarizeMotionSamples", () => {
 
   test("does not fabricate passing metrics when no samples are captured", () => {
     const metrics = summarizeMotionSamples({
-      durationSeconds: 25,
+      durationSeconds: 15,
       samples: [],
       stepLengthMeters: 0.68,
     });

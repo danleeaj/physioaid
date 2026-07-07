@@ -85,6 +85,18 @@ type TestStartPanelProps = {
   guidedBaselineCue?: string;
   /** Spoken cue immediately when the active phase starts. */
   guidedActiveCue?: string;
+  /** Start immediately after this panel mounts, used after a separate instruction screen. */
+  autoStartOnMount?: boolean;
+  /** Reduce spacing for one-page test surfaces. */
+  compactLayout?: boolean;
+  /** Hide the intro header when an instruction screen has already shown it. */
+  showHeader?: boolean;
+  /** Hide fallback actions during focused live test runs. */
+  showFallbackActions?: boolean;
+  /** Hide inline result tiles when a dedicated result screen follows. */
+  showResultItems?: boolean;
+  /** Hide the pre-run safety reminder when a separate instruction screen covers it. */
+  showSafetyReminder?: boolean;
   children?: ReactNode;
 };
 
@@ -156,6 +168,12 @@ export function TestStartPanel({
   autoStopOnStandstill,
   guidedBaselineCue,
   guidedActiveCue,
+  autoStartOnMount = false,
+  compactLayout = false,
+  showHeader = true,
+  showFallbackActions = true,
+  showResultItems = true,
+  showSafetyReminder = true,
   children,
 }: TestStartPanelProps) {
   const { t, speak, stopSpeaking } = useLanguage();
@@ -180,6 +198,7 @@ export function TestStartPanel({
   const calibrationEndRef = useRef(0);
   const cancelledRef = useRef(false);
   const finishedRef = useRef(false);
+  const autoStartedRef = useRef(false);
   const finishRunRef = useRef<(elapsed: number) => void>(() => {});
 
   useEffect(() => {
@@ -299,6 +318,15 @@ export function TestStartPanel({
     finishRunRef.current = finishRun;
   });
 
+  useEffect(() => {
+    if (!autoStartOnMount) return;
+    if (runState !== "ready") return;
+    if (autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    void startRun();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-start is a mount transition after the separate TEST screen
+  }, [autoStartOnMount]);
+
   async function startRun() {
     const runStartResult = await onRunStart?.();
     if (runStartResult === false) {
@@ -379,24 +407,26 @@ export function TestStartPanel({
   const inGuidedPrelude = guidedStage !== null && guidedStage !== "active";
 
   return (
-    <section className="grid gap-6">
-      <header className="grid gap-3">
-        <p className="eyebrow">{t("test.guidedTest")}</p>
-        <h1 className="text-[length:var(--text-title)] font-semibold sm:text-[length:var(--text-display)]">
-          {title}
-        </h1>
-        <p className="flex max-w-3xl gap-2 text-[length:var(--text-lead)] text-[var(--muted)]">
-          <ShieldCheck
-            aria-hidden
-            className="mt-1 shrink-0 text-[var(--primary)]"
-            size={22}
-          />
-          <span>{safetyInstruction}</span>
-        </p>
-        <div>
-          <ListenButton text={`${title}. ${safetyInstruction}`} />
-        </div>
-      </header>
+    <section className={compactLayout ? "grid gap-4" : "grid gap-6"}>
+      {showHeader && (
+        <header className="grid gap-3">
+          <p className="eyebrow">{t("test.guidedTest")}</p>
+          <h1 className="text-[length:var(--text-title)] font-semibold sm:text-[length:var(--text-display)]">
+            {title}
+          </h1>
+          <p className="flex max-w-3xl gap-2 text-[length:var(--text-lead)] text-[var(--muted)]">
+            <ShieldCheck
+              aria-hidden
+              className="mt-1 shrink-0 text-[var(--primary)]"
+              size={22}
+            />
+            <span>{safetyInstruction}</span>
+          </p>
+          <div>
+            <ListenButton text={`${title}. ${safetyInstruction}`} />
+          </div>
+        </header>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {statusItems.map((item) => (
@@ -415,12 +445,16 @@ export function TestStartPanel({
         </SafetyCallout>
       )}
 
-      {!inGuidedPrelude && runState !== "running" && (
+      {showSafetyReminder && !inGuidedPrelude && runState !== "running" && (
         <SafetyCallout>{t("test.safetyReminder")}</SafetyCallout>
       )}
 
       {inGuidedPrelude && guidedStage !== null ? (
-        <div className="panel-card grid gap-6 p-6 text-center sm:p-8">
+        <div
+          className={`panel-card grid text-center ${
+            compactLayout ? "gap-4 p-5" : "gap-6 p-6 sm:p-8"
+          }`}
+        >
           <p className="text-[length:var(--text-label)] font-bold uppercase tracking-wide text-[var(--muted)]">
             {GUIDED_STAGE_COPY[guidedStage].headline}
           </p>
@@ -436,7 +470,11 @@ export function TestStartPanel({
           </button>
         </div>
       ) : runState === "running" ? (
-        <div className="panel-card grid gap-6 p-6 text-center sm:p-8">
+        <div
+          className={`panel-card grid text-center ${
+            compactLayout ? "gap-4 p-5" : "gap-6 p-6 sm:p-8"
+          }`}
+        >
           <p className="text-[length:var(--text-label)] font-bold uppercase tracking-wide text-[var(--muted)]">
             {t("test.elapsed")}
           </p>
@@ -482,7 +520,7 @@ export function TestStartPanel({
         </div>
       )}
 
-      {resultItems.length > 0 && runState !== "running" && (
+      {showResultItems && resultItems.length > 0 && runState !== "running" && (
         <div>
           <h2 className="mb-3 text-[length:var(--text-lead)] font-semibold">
             {t("test.results")}
@@ -502,7 +540,7 @@ export function TestStartPanel({
         </div>
       )}
 
-      {!inGuidedPrelude && runState !== "running" && (
+      {showFallbackActions && !inGuidedPrelude && runState !== "running" && (
         <div className="quiet-card p-5">
           <p className="mb-3 text-[length:var(--text-label)] font-bold text-[var(--muted)]">
             {t("test.otherOptions")}

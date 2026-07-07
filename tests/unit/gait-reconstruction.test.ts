@@ -40,14 +40,18 @@ function range(values: Float64Array, axis: 0 | 1 | 2) {
 describe("analyzeGaitReconstruction", () => {
   test("returns full reconstruction metrics for gyro-capable samples", () => {
     const result = analyzeGaitReconstruction({
-      durationSeconds: 25,
-      samples: syntheticClosedLoopGait({ includeGyro: true }),
+      durationSeconds: 18,
+      samples: syntheticClosedLoopGait({
+        cycleSeconds: 0.9,
+        includeGyro: true,
+        seconds: 18,
+      }),
       stepLengthMeters: 0.68,
     });
 
     expect(result.completionStatus).toBe("completed");
     expect(result.mode).toBe("full");
-    expect(result.cycleCount).toBeGreaterThanOrEqual(12);
+    expect(result.cycleCount).toBeGreaterThanOrEqual(5);
     expect(result.cadenceStepsPerMinute).toBeGreaterThan(90);
     expect(result.cadenceStepsPerMinute).toBeLessThan(130);
     expect(result.shape.verticalExcursionM).toBeGreaterThan(0.035);
@@ -57,8 +61,8 @@ describe("analyzeGaitReconstruction", () => {
 
   test("returns reduced metrics when gyro is absent", () => {
     const result = analyzeGaitReconstruction({
-      durationSeconds: 25,
-      samples: syntheticClosedLoopGait({ includeGyro: false }),
+      durationSeconds: 15,
+      samples: syntheticClosedLoopGait({ includeGyro: false, seconds: 15 }),
       stepLengthMeters: 0.68,
     });
 
@@ -70,7 +74,7 @@ describe("analyzeGaitReconstruction", () => {
   });
 
   test("fails closed for static captures", () => {
-    const samples = syntheticClosedLoopGait().map((sample) => ({
+    const samples = syntheticClosedLoopGait({ seconds: 15 }).map((sample) => ({
       ...sample,
       accelerationX: 0,
       accelerationY: 9.81,
@@ -81,7 +85,7 @@ describe("analyzeGaitReconstruction", () => {
     }));
 
     const result = analyzeGaitReconstruction({
-      durationSeconds: 25,
+      durationSeconds: 15,
       samples,
       stepLengthMeters: 0.68,
     });

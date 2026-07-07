@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GaitWalkDemo } from "@/components/assessment/demos/GaitWalkDemo";
 import { MotionSensorStatus } from "@/components/assessment/MotionSensorStatus";
 import { TestStartPanel } from "@/components/assessment/TestStartPanel";
@@ -9,10 +9,11 @@ import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
 import { useUserProfile } from "@/components/auth/UserProfileProvider";
+import { speedSourceLabel } from "@/components/assessment/screens/gait-display";
 import {
-  gaitResultItems,
-  speedSourceLabel,
-} from "@/components/assessment/screens/gait-display";
+  GaitCompactReadyPanel,
+  GaitTestInstructionPanel,
+} from "@/components/assessment/screens/GaitCompactPanels";
 import { GaitResultReview } from "@/components/assessment/screens/GaitResultReview";
 import {
   analyzeGaitCalibration,
@@ -23,6 +24,10 @@ import {
 } from "@/lib/sensors/gait-calibration";
 import { gaitProtocol } from "@/lib/sensors/gait-protocol";
 import { getDemoMotionMetrics } from "@/lib/sensors/motion-summary";
+import {
+  getMotionSupportStatus,
+  requestMotionPermission,
+} from "@/lib/sensors/browser-motion";
 import {
   DEFAULT_HEIGHT_METERS,
   estimateStepLengthMeters,
@@ -36,6 +41,8 @@ type GaitView =
   | "start"
   | "calibration_setup"
   | "calibration_capture"
+  | "instructions"
+  | "active"
   | "manual"
   | "result";
 type StepLengthEstimateMethod = "height_regression" | "calibration_walk";
@@ -92,6 +99,13 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
   const parsedCalibrationDistanceMeters = Number(calibrationDistanceMeters);
   const canUseCalibration = chairStandGate.canProceed;
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setMotionStatus(getMotionSupportStatus());
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   function showGaitStart() {
     setGaitPhase("start");
     setGaitView("start");
@@ -106,6 +120,20 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
   function showResult() {
     setGaitPhase("start");
     setGaitView("result");
+  }
+
+  function showTestInstructions() {
+    setGaitPhase("start");
+    setGaitView("instructions");
+  }
+
+  function startLiveGaitTest() {
+    setGaitPhase("start");
+    setGaitView("active");
+  }
+
+  async function enableMotionPermission() {
+    setMotionStatus(await requestMotionPermission());
   }
 
   function markStoppedInScreen() {
@@ -304,6 +332,65 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
     );
   }
 
+  if (gaitPhase === "start" && gaitView === "instructions") {
+    return (
+      <GaitTestInstructionPanel
+        durationSeconds={gaitProtocol.targetDurationSeconds}
+        onBack={showGaitStart}
+        onStart={startLiveGaitTest}
+      />
+    );
+  }
+
+  if (gaitPhase === "start" && gaitView === "active") {
+    return (
+      <TestStartPanel
+        autoCompleteSeconds={gaitProtocol.targetDurationSeconds}
+        autoStartOnMount
+        compactLayout
+        countdownCueWord="go"
+        fallbackActions={[]}
+        guidedPocketMode
+        onPrimary={(samples, elapsedSeconds) => {
+          startGaitCountdown(
+            samples,
+            elapsedSeconds,
+            normalStepLengthMeters,
+            normalStepLengthMethod,
+          );
+          showResult();
+        }}
+        primaryLabel="Start"
+        resultItems={[]}
+        safetyInstruction={`Walk at your usual safe pace for ${gaitProtocol.targetDurationSeconds} seconds with the phone placed in a front pocket.`}
+        showFallbackActions={false}
+        showHeader={false}
+        showMotionReadout
+        showResultItems={false}
+        showSafetyReminder={false}
+        statusItems={[
+          {
+            label: "Motion",
+            value: permissionLabel(motionStatus?.permissionState),
+          },
+          {
+            label: "Duration",
+            value: `${gaitProtocol.targetDurationSeconds}s`,
+          },
+          {
+            label: "Speed",
+            value: sessionCalibration
+              ? "Calibration walk"
+              : speedSourceLabel(motion),
+          },
+        ]}
+        title="Gait walk test"
+        guidedActiveCue={`Start walking for ${gaitProtocol.targetDurationSeconds} seconds.`}
+        guidedBaselineCue="Stand still. Start walking when you hear go."
+      />
+    );
+  }
+
   if (gaitView === "manual" || gaitPhase === "manual") {
     return (
       <section className="grid gap-6">
@@ -376,61 +463,9 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
 
   if (gaitPhase === "start") {
     return (
-      <TestStartPanel
-        autoCompleteSeconds={gaitProtocol.targetDurationSeconds}
-        countdownCueWord="go"
-        fallbackActions={[
-          ...(canUseCalibration
-            ? [
-                {
-                  label: "Use measured distance",
-                  onClick: () => setGaitView("calibration_setup"),
-                },
-              ]
-            : []),
-          {
-            label: "Enter manually",
-            onClick: showManualEntry,
-          },
-          {
-            label: "Mark stopped or unstable",
-            onClick: markStoppedInScreen,
-          },
-        ]}
-        guidedPocketMode
-        onPrimary={(samples, elapsedSeconds) => {
-          startGaitCountdown(
-            samples,
-            elapsedSeconds,
-            normalStepLengthMeters,
-            normalStepLengthMethod,
-          );
-          showResult();
-        }}
-        primaryLabel="Start 25 sec walk"
-        resultItems={gaitResultItems(motion)}
-        safetyInstruction="Walk at your usual safe pace for 25 seconds with the phone placed in a front pocket."
-        showMotionReadout
-        statusItems={[
-          {
-            label: "Motion",
-            value: permissionLabel(motionStatus?.permissionState),
-          },
-          {
-            label: "Duration",
-            value: `${gaitProtocol.targetDurationSeconds}s`,
-          },
-          {
-            label: "Speed",
-            value: sessionCalibration
-              ? "Calibration walk"
-              : speedSourceLabel(motion),
-          },
-        ]}
-        title="Gait walk test"
-      >
+      <>
         {sessionCalibration && (
-          <div className="quiet-card grid gap-2 p-5">
+          <div className="quiet-card mb-4 grid gap-2 p-4">
             <p className="text-[length:var(--text-label)] font-bold text-[var(--muted)]">
               Calibration walk ready
             </p>
@@ -444,8 +479,16 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
             </p>
           </div>
         )}
-        <MotionSensorStatus onStatusChange={setMotionStatus} />
-      </TestStartPanel>
+        <GaitCompactReadyPanel
+          canUseCalibration={canUseCalibration}
+          motionStatus={motionStatus}
+          onCalibrate={() => setGaitView("calibration_setup")}
+          onEnableMotion={enableMotionPermission}
+          onManualEntry={showManualEntry}
+          onMarkStopped={markStoppedInScreen}
+          onStart={showTestInstructions}
+        />
+      </>
     );
   }
 

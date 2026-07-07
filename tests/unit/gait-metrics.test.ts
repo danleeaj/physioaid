@@ -23,7 +23,7 @@ function walkFromStepPattern(
   options?: { amplitudes?: number[]; stepLengthMeters?: number },
 ): MotionSample[] {
   const hz = 50;
-  const seconds = 25;
+  const seconds = 15;
   const stepTimes: { timestamp: number; amplitude: number }[] = [];
   let timestamp = 0.3;
 
@@ -64,10 +64,10 @@ function irregularWalk(): MotionSample[] {
   let timestampMs = 0;
   const intervalsMs = [420, 720, 380, 850, 500, 680, 460, 900];
 
-  for (let step = 0; timestampMs < 25_000; step += 1) {
+  for (let step = 0; timestampMs < 15_000; step += 1) {
     const intervalMs = intervalsMs[step % intervalsMs.length];
     const nextStepMs = timestampMs + intervalMs;
-    while (timestampMs < nextStepMs && timestampMs < 25_000) {
+    while (timestampMs < nextStepMs && timestampMs < 15_000) {
       const phase = ((timestampMs % intervalMs) / intervalMs) * 2 * Math.PI;
       samples.push({
         timestampMs,
@@ -86,16 +86,16 @@ function irregularWalk(): MotionSample[] {
 }
 
 describe("summarizeGaitMetrics", () => {
-  test("summarizes a regular 25 second walk", () => {
+  test("summarizes a regular 15 second walk", () => {
     const metrics = summarizeGaitMetrics({
-      durationSeconds: 25,
-      samples: regularWalk(25),
+      durationSeconds: 15,
+      samples: regularWalk(15),
       stepLengthMeters: 0.68,
     });
 
     expect(metrics.completionStatus).toBe("completed");
-    expect(metrics.stepCount).toBeGreaterThanOrEqual(45);
-    expect(metrics.stepCount).toBeLessThanOrEqual(55);
+    expect(metrics.stepCount).toBeGreaterThanOrEqual(25);
+    expect(metrics.stepCount).toBeLessThanOrEqual(35);
     expect(metrics.cadenceStepsPerMinute).toBeGreaterThanOrEqual(108);
     expect(metrics.cadenceStepsPerMinute).toBeLessThanOrEqual(132);
     expect(metrics.rhythmConsistency).toBeGreaterThan(0.8);
@@ -107,12 +107,12 @@ describe("summarizeGaitMetrics", () => {
 
   test("scores irregular step timing lower than regular timing", () => {
     const regular = summarizeGaitMetrics({
-      durationSeconds: 25,
-      samples: regularWalk(25),
+      durationSeconds: 15,
+      samples: regularWalk(15),
       stepLengthMeters: 0.68,
     });
     const irregular = summarizeGaitMetrics({
-      durationSeconds: 25,
+      durationSeconds: 15,
       samples: irregularWalk(),
       stepLengthMeters: 0.68,
     });
@@ -122,28 +122,28 @@ describe("summarizeGaitMetrics", () => {
   });
 
   test("does not collapse rhythm for normal cadence with pocket interval artifacts", () => {
-    const intervals = Array.from({ length: 46 }, (_, index) =>
+    const intervals = Array.from({ length: 28 }, (_, index) =>
       index % 4 === 0 ? 0.31 : index % 4 === 1 ? 0.89 : 0.47,
     );
     const metrics = summarizeGaitMetrics({
-      durationSeconds: 25,
+      durationSeconds: 15,
       samples: walkFromStepPattern(intervals),
       stepLengthMeters: 0.697,
     });
 
     expect(metrics.completionStatus).toBe("completed");
-    expect(metrics.stepCount).toBeGreaterThanOrEqual(45);
+    expect(metrics.stepCount).toBeGreaterThanOrEqual(25);
     expect(metrics.cadenceStepsPerMinute).toBeGreaterThanOrEqual(108);
     expect(metrics.rhythmConsistency).toBeGreaterThan(0.55);
   });
 
   test("does not fail stability from a few loose-pocket amplitude spikes", () => {
-    const intervals = Array.from({ length: 46 }, () => 0.53);
-    const amplitudes = Array.from({ length: 47 }, (_, index) =>
+    const intervals = Array.from({ length: 28 }, () => 0.53);
+    const amplitudes = Array.from({ length: 29 }, (_, index) =>
       index % 10 === 0 ? 3.4 : index % 13 === 0 ? 0.35 : 1.1,
     );
     const metrics = summarizeGaitMetrics({
-      durationSeconds: 25,
+      durationSeconds: 15,
       samples: walkFromStepPattern(intervals, { amplitudes }),
       stepLengthMeters: 0.697,
     });
@@ -155,9 +155,9 @@ describe("summarizeGaitMetrics", () => {
 
   test("uses explicit course distance over estimated step length for speed", () => {
     const metrics = summarizeGaitMetrics({
-      distanceMeters: 20,
-      durationSeconds: 25,
-      samples: regularWalk(25),
+      distanceMeters: 12,
+      durationSeconds: 15,
+      samples: regularWalk(15),
       stepLengthMeters: 0.68,
     });
 

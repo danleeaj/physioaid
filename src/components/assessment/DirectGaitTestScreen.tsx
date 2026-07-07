@@ -54,15 +54,9 @@ export function DirectGaitTestScreen() {
     <div className="flex min-h-dvh flex-col bg-[#f7f7f7]">
       <TopBar title="Direct gait test" />
       <div className="app-content flex-1">
-        <div className="callout grid gap-2">
-          <p>
-            This standalone page opens the live gait walk test directly for
-            testing. The main assessment flow still requires the sit-to-stand
-            gate before gait walking.
-          </p>
-          <p className="text-[length:var(--text-caption)] font-bold text-[var(--muted)]">
-            Version: {DIRECT_GAIT_TEST_VERSION}
-          </p>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[length:var(--text-caption)] text-[var(--muted)]">
+          <p>Direct gait test route</p>
+          <p className="font-bold">Version: {DIRECT_GAIT_TEST_VERSION}</p>
         </div>
         <GaitScreen flow={flow} />
       </div>

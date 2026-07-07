@@ -34,13 +34,13 @@ describe("direct gait flow", () => {
   });
 
   test("exposes a visible direct gait test version marker", () => {
-    expect(DIRECT_GAIT_TEST_VERSION).toMatch(/^gait-test-\d{4}\.\d{2}\.\d{2}\.\d+$/);
+    expect(DIRECT_GAIT_TEST_VERSION).toBe("gait-test-2026.07.07.2");
   });
 
-  test("summarizes a direct 25 second pocket walk as accelerometer metrics", () => {
+  test("summarizes a direct 15 second pocket walk as accelerometer metrics", () => {
     const metrics = summarizeDirectGaitRun({
-      durationSeconds: 25,
-      samples: regularWalk(25),
+      durationSeconds: 15,
+      samples: regularWalk(15),
       stepLengthMeters: 0.68,
     });
 
@@ -48,7 +48,7 @@ describe("direct gait flow", () => {
     expect(metrics.source).toBe("accelerometer");
     expect(metrics.gaitSpeedEstimateSource).toBe("estimated_step_length");
     expect(metrics.absoluteEstimateMethod).toBe("height_regression");
-    expect(metrics.stepCount).toBeGreaterThanOrEqual(45);
+    expect(metrics.stepCount).toBeGreaterThanOrEqual(25);
   });
 
   test("stopped direct gait runs remain blocked as manual stopped records", () => {

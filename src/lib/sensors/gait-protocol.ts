@@ -1,11 +1,11 @@
 import type { MotionSample } from "@/types/motion";
 
 export const gaitProtocol = {
-  targetDurationSeconds: 25,
-  minDurationSeconds: 20,
-  maxDurationSeconds: 30,
+  targetDurationSeconds: 15,
+  minDurationSeconds: 12,
+  maxDurationSeconds: 18,
   minSampleRateHz: 20,
-  minValidSamples: 240,
+  minValidSamples: 180,
   minSignalRange: 0.15,
   minDetectedSteps: 8,
   minimumStepIntervalSeconds: 0.3,
