@@ -10,11 +10,10 @@ import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
 import { useUserProfile } from "@/components/auth/UserProfileProvider";
 import {
-  analysisModeLabel,
-  gaitSpeedLabel,
-  shapeResultItem,
+  gaitResultItems,
   speedSourceLabel,
 } from "@/components/assessment/screens/gait-display";
+import { GaitResultReview } from "@/components/assessment/screens/GaitResultReview";
 import {
   analyzeGaitCalibration,
   nextSessionCalibration,
@@ -33,11 +32,12 @@ import type { FunctionalTestGate } from "@/lib/functional-tests/gates";
 import type { MotionMetrics } from "@/types/assessment";
 import type { MotionSupportStatus } from "@/types/motion";
 
-function formatOptionalNumber(value: number | undefined, suffix: string) {
-  return value === undefined ? "Not measured" : `${value}${suffix}`;
-}
-
-type CalibrationView = "walk" | "setup" | "capture";
+type GaitView =
+  | "start"
+  | "calibration_setup"
+  | "calibration_capture"
+  | "manual"
+  | "result";
 type StepLengthEstimateMethod = "height_regression" | "calibration_walk";
 
 const calibrationReasonCopy: Record<GaitCalibrationRejectReason, string> = {
@@ -56,11 +56,7 @@ const calibrationReasonCopy: Record<GaitCalibrationRejectReason, string> = {
 
 export type GaitScreenFlow = Pick<
   AssessmentFlow,
-  | "gaitPhase"
-  | "setGaitPhase"
-  | "setMotion"
-  | "markGaitStoppedOrUnstable"
-  | "startGaitCountdown"
+  "gaitPhase" | "setGaitPhase" | "setMotion" | "startGaitCountdown"
 > & {
   chairStandGate: FunctionalTestGate;
   motion: MotionMetrics;
@@ -75,15 +71,13 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
     setMotion,
     chairStandGate,
     motionGate,
-    markGaitStoppedOrUnstable,
     startGaitCountdown,
   } = flow;
   const { profile } = useUserProfile();
   const [motionStatus, setMotionStatus] = useState<MotionSupportStatus>();
   const heightCm = profile?.heightCm ?? Math.round(DEFAULT_HEIGHT_METERS * 100);
   const heightStepLengthMeters = estimateStepLengthMeters(heightCm / 100);
-  const [calibrationView, setCalibrationView] =
-    useState<CalibrationView>("walk");
+  const [gaitView, setGaitView] = useState<GaitView>("start");
   const [calibrationDistanceMeters, setCalibrationDistanceMeters] =
     useState("6");
   const [sessionCalibration, setSessionCalibration] =
@@ -97,10 +91,64 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
     : "height_regression";
   const parsedCalibrationDistanceMeters = Number(calibrationDistanceMeters);
   const canUseCalibration = chairStandGate.canProceed;
-  const shapeItem = shapeResultItem(motion);
+
+  function showGaitStart() {
+    setGaitPhase("start");
+    setGaitView("start");
+  }
+
+  function showManualEntry() {
+    updateManualMotion({});
+    setGaitPhase("start");
+    setGaitView("manual");
+  }
+
+  function showResult() {
+    setGaitPhase("start");
+    setGaitView("result");
+  }
+
+  function markStoppedInScreen() {
+    setMotion((current) => ({
+      ...current,
+      completionStatus: "stopped",
+      rhythmConsistency: 0.35,
+      source: "manual",
+      stabilityScore: 0.3,
+    }));
+    showResult();
+  }
+
+  function useDemoGaitResult() {
+    setMotion(getDemoMotionMetrics());
+    showResult();
+  }
+
+  function updateManualMotion(patch: Partial<MotionMetrics>) {
+    setMotion((current) => ({
+      absoluteEstimateMethod: "none",
+      completionStatus: "completed",
+      gaitSpeedMetersPerSecond:
+        patch.gaitSpeedMetersPerSecond ??
+        (current.source === "manual"
+          ? current.gaitSpeedMetersPerSecond
+          : undefined),
+      rhythmConsistency:
+        patch.rhythmConsistency ??
+        (current.source === "manual" ? current.rhythmConsistency : 0),
+      source: "manual",
+      stabilityScore:
+        patch.stabilityScore ??
+        (current.source === "manual" ? current.stabilityScore : 0),
+    }));
+  }
 
   if (gaitPhase === "demo") {
-    return <GaitWalkDemo onContinue={() => setGaitPhase("start")} />;
+    return <GaitWalkDemo onContinue={showGaitStart} />;
+  }
+
+  if (gaitView === "result") {
+    return <GaitResultReview motion={motion} onBack={showGaitStart} />;
   }
 
   if (gaitPhase === "start" && !canUseCalibration) {
@@ -115,7 +163,7 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
         </SafetyCallout>
         <button
           className="secondary-action"
-          onClick={markGaitStoppedOrUnstable}
+          onClick={markStoppedInScreen}
           type="button"
         >
           Skip gait walking
@@ -124,7 +172,7 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
     );
   }
 
-  if (gaitPhase === "start" && calibrationView === "setup") {
+  if (gaitPhase === "start" && gaitView === "calibration_setup") {
     return (
       <section className="grid gap-6">
         <ScreenHeader
@@ -185,14 +233,14 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
         <div className="flex flex-wrap gap-3">
           <button
             className="primary-action"
-            onClick={() => setCalibrationView("capture")}
+            onClick={() => setGaitView("calibration_capture")}
             type="button"
           >
             Start calibration walk
           </button>
           <button
             className="secondary-action"
-            onClick={() => setCalibrationView("walk")}
+            onClick={() => setGaitView("start")}
             type="button"
           >
             Timed walk without calibration
@@ -202,7 +250,7 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
     );
   }
 
-  if (gaitPhase === "start" && calibrationView === "capture") {
+  if (gaitPhase === "start" && gaitView === "calibration_capture") {
     return (
       <TestStartPanel
         autoStopOnStandstill={{
@@ -213,7 +261,7 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
         fallbackActions={[
           {
             label: "Cancel calibration",
-            onClick: () => setCalibrationView("setup"),
+            onClick: () => setGaitView("calibration_setup"),
           },
         ]}
         guidedPocketMode
@@ -227,7 +275,9 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
           setSessionCalibration((current) =>
             nextSessionCalibration(current, result),
           );
-          setCalibrationView(result.status === "accepted" ? "walk" : "setup");
+          setGaitView(
+            result.status === "accepted" ? "start" : "calibration_setup",
+          );
         }}
         primaryLabel="Start calibration walk"
         resultItems={[]}
@@ -254,6 +304,76 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
     );
   }
 
+  if (gaitView === "manual" || gaitPhase === "manual") {
+    return (
+      <section className="grid gap-6">
+        <ScreenHeader
+          support="Use this fallback if motion sensing is denied or unavailable."
+          title="Enter gait walk result"
+        />
+        <MotionSensorStatus />
+        <FormGrid>
+          <TextField
+            label="Gait speed in metres per second"
+            onChange={(value) =>
+              updateManualMotion({
+                gaitSpeedMetersPerSecond: Number(value),
+              })
+            }
+            type="number"
+            value={String(motion.gaitSpeedMetersPerSecond ?? 0)}
+          />
+          <TextField
+            label="Stability score"
+            onChange={(value) =>
+              updateManualMotion({
+                stabilityScore: Number(value),
+              })
+            }
+            type="number"
+            value={String(motion.stabilityScore)}
+          />
+        </FormGrid>
+        <div className="flex flex-wrap gap-3">
+          <button
+            className="primary-action"
+            onClick={showResult}
+            type="button"
+          >
+            Review result
+          </button>
+          <button
+            className="secondary-action"
+            onClick={showGaitStart}
+            type="button"
+          >
+            Back to gait test
+          </button>
+          <button
+            className="secondary-action"
+            onClick={useDemoGaitResult}
+            type="button"
+          >
+            Use demo gait walk
+          </button>
+          <button
+            className="secondary-action"
+            onClick={markStoppedInScreen}
+            type="button"
+          >
+            Mark stopped or unstable
+          </button>
+        </div>
+        {!motionGate.canProceed && (
+          <SafetyCallout tone="danger">
+            Gait walking suggests caution. The floor-rising test is the
+            highest-risk test and should not be attempted in this flow.
+          </SafetyCallout>
+        )}
+      </section>
+    );
+  }
+
   if (gaitPhase === "start") {
     return (
       <TestStartPanel
@@ -264,66 +384,31 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
             ? [
                 {
                   label: "Use measured distance",
-                  onClick: () => setCalibrationView("setup"),
+                  onClick: () => setGaitView("calibration_setup"),
                 },
               ]
             : []),
           {
             label: "Enter manually",
-            onClick: () => setGaitPhase("manual"),
+            onClick: showManualEntry,
           },
           {
             label: "Mark stopped or unstable",
-            onClick: markGaitStoppedOrUnstable,
+            onClick: markStoppedInScreen,
           },
         ]}
         guidedPocketMode
-        onPrimary={(samples, elapsedSeconds) =>
+        onPrimary={(samples, elapsedSeconds) => {
           startGaitCountdown(
             samples,
             elapsedSeconds,
             normalStepLengthMeters,
             normalStepLengthMethod,
-          )
-        }
+          );
+          showResult();
+        }}
         primaryLabel="Start 25 sec walk"
-        resultItems={[
-          {
-            label: gaitSpeedLabel(motion),
-            value: `${motion.gaitSpeedMetersPerSecond ?? 0} m/s`,
-          },
-          {
-            label: "Cadence",
-            value: formatOptionalNumber(
-              motion.cadenceStepsPerMinute,
-              " steps/min",
-            ),
-          },
-          {
-            label: "Steps",
-            value:
-              motion.stepCount === undefined
-                ? "Not measured"
-                : String(motion.stepCount),
-          },
-          {
-            label: "Rhythm",
-            value: `${Math.round(motion.rhythmConsistency * 100)}%`,
-          },
-          {
-            label: "Stability",
-            value: `${Math.round(motion.stabilityScore * 100)}%`,
-          },
-          {
-            label: "Quality",
-            value: `${Math.round((motion.cycleQualityScore ?? 0) * 100)}%`,
-          },
-          {
-            label: "Mode",
-            value: analysisModeLabel(motion.analysisMode),
-          },
-          ...(shapeItem ? [shapeItem] : []),
-        ]}
+        resultItems={gaitResultItems(motion)}
         safetyInstruction="Walk at your usual safe pace for 25 seconds with the phone placed in a front pocket."
         showMotionReadout
         statusItems={[
@@ -364,70 +449,5 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
     );
   }
 
-  return (
-    <section className="grid gap-6">
-      <ScreenHeader
-        support="Use this fallback if motion sensing is denied or unavailable."
-        title="Enter gait walk result"
-      />
-      <MotionSensorStatus />
-      <FormGrid>
-        <TextField
-          label="Gait speed in metres per second"
-          onChange={(value) =>
-            setMotion((current) => ({
-              ...current,
-              gaitSpeedMetersPerSecond: Number(value),
-              completionStatus: "completed",
-              source: "manual",
-            }))
-          }
-          type="number"
-          value={String(motion.gaitSpeedMetersPerSecond ?? 0)}
-        />
-        <TextField
-          label="Stability score"
-          onChange={(value) =>
-            setMotion((current) => ({
-              ...current,
-              stabilityScore: Number(value),
-              completionStatus: "completed",
-              source: "manual",
-            }))
-          }
-          type="number"
-          value={String(motion.stabilityScore)}
-        />
-      </FormGrid>
-      <div className="flex flex-wrap gap-3">
-        <button
-          className="secondary-action"
-          onClick={() => setGaitPhase("start")}
-          type="button"
-        >
-          Back to guided start
-        </button>
-        <button
-          className="secondary-action"
-          onClick={() => setMotion(getDemoMotionMetrics())}
-          type="button"
-        >
-          Use demo gait walk
-        </button>
-        <button
-          className="secondary-action"
-          onClick={markGaitStoppedOrUnstable}
-          type="button"
-        >
-          Mark stopped or unstable
-        </button>
-      </div>
-      {!motionGate.canProceed && (
-        <SafetyCallout tone="danger">
-          Gait walking suggests caution. The floor-rising test is the
-          highest-risk test and should not be attempted in this flow.
-        </SafetyCallout>
-      )}
-    </section>
-  );
+  return null;
 }

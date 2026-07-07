@@ -10,7 +10,6 @@ import {
   createDirectGaitState,
   DIRECT_GAIT_TEST_VERSION,
   directGaitChairStandGate,
-  stopDirectGaitRun,
   summarizeDirectGaitRun,
 } from "@/lib/assessment/direct-gait-flow";
 import { getMotionGate } from "@/lib/functional-tests/gates";
@@ -26,10 +25,6 @@ export function DirectGaitTestScreen() {
   );
   const [motion, setMotion] = useState<MotionMetrics>(initialState.motion);
   const motionGate = useMemo(() => getMotionGate(motion), [motion]);
-
-  function markGaitStoppedOrUnstable() {
-    setMotion(stopDirectGaitRun());
-  }
 
   function startGaitCountdown(
     samples: MotionSample[] = [],
@@ -52,7 +47,6 @@ export function DirectGaitTestScreen() {
     setMotion,
     chairStandGate: directGaitChairStandGate,
     motionGate,
-    markGaitStoppedOrUnstable,
     startGaitCountdown,
   };
 
