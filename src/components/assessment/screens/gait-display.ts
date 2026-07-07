@@ -9,6 +9,9 @@ export function gaitSpeedLabel(motion: MotionMetrics) {
   if (motion.absoluteEstimateMethod === "course_distance") {
     return "Course speed";
   }
+  if (motion.absoluteEstimateMethod === "calibration_walk") {
+    return "Calibration speed";
+  }
   if (motion.gaitSpeedMetersPerSecond !== undefined) {
     return "Estimated speed";
   }
@@ -50,6 +53,9 @@ export function shapeResultItem(
 export function speedSourceLabel(motion: MotionMetrics) {
   if (motion.absoluteEstimateMethod === "course_distance") {
     return "Course distance";
+  }
+  if (motion.absoluteEstimateMethod === "calibration_walk") {
+    return "Calibration walk";
   }
   if (motion.absoluteEstimateMethod === "height_regression") {
     return "Estimated";

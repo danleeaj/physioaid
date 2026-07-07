@@ -45,6 +45,19 @@ describe("summarizeMotionSamples", () => {
     expect(metrics.absoluteEstimateMethod).toBe("height_regression");
   });
 
+  test("labels calibrated step length estimates", () => {
+    const metrics = summarizeMotionSamples({
+      durationSeconds: 25,
+      samples: regularWalk(25),
+      stepLengthMeters: 0.62,
+      stepLengthEstimateMethod: "calibration_walk",
+    });
+
+    expect(metrics.completionStatus).toBe("completed");
+    expect(metrics.gaitSpeedEstimateSource).toBe("estimated_step_length");
+    expect(metrics.absoluteEstimateMethod).toBe("calibration_walk");
+  });
+
   test("maps reduced reconstruction when gyro is absent", () => {
     const samples = regularWalk(25).map((sample) => ({
       timestampMs: sample.timestampMs,

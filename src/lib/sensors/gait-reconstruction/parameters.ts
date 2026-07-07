@@ -7,6 +7,7 @@ import type {
 export type AbsoluteEstimateMethod =
   | "height_regression"
   | "course_distance"
+  | "calibration_walk"
   | "none";
 
 export function cycleIntervalsSeconds(peaks: number[], fs: number): number[] {
@@ -43,6 +44,7 @@ export function verticalOnlyShape(vertical: Float64Array): TrajectoryShape {
 export function absoluteEstimate(input: {
   distanceMeters?: number;
   stepLengthMeters?: number;
+  stepLengthEstimateMethod?: "height_regression" | "calibration_walk";
 }): {
   method: AbsoluteEstimateMethod;
   gaitSpeedEstimateSource?: GaitSpeedEstimateSource;
@@ -55,7 +57,7 @@ export function absoluteEstimate(input: {
   }
   if (input.stepLengthMeters !== undefined && input.stepLengthMeters > 0) {
     return {
-      method: "height_regression",
+      method: input.stepLengthEstimateMethod ?? "height_regression",
       gaitSpeedEstimateSource: "estimated_step_length",
     };
   }

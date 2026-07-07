@@ -32,6 +32,7 @@ export type GaitReconstructionInput = {
   durationSeconds: number;
   distanceMeters?: number;
   stepLengthMeters?: number;
+  stepLengthEstimateMethod?: "height_regression" | "calibration_walk";
 };
 
 export type GaitReconstructionSummary = GaitReconstructionResult & {
@@ -41,7 +42,11 @@ export type GaitReconstructionSummary = GaitReconstructionResult & {
   gaitSpeedMetersPerSecond?: number;
   estimatedGaitSpeedMetersPerSecond?: number;
   gaitSpeedEstimateSource?: "course_distance" | "estimated_step_length";
-  absoluteEstimateMethod: "height_regression" | "course_distance" | "none";
+  absoluteEstimateMethod:
+    | "height_regression"
+    | "course_distance"
+    | "calibration_walk"
+    | "none";
   stepTimeMeanSeconds?: number;
   stepTimeVariability?: number;
   jerkVariability?: number;

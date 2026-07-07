@@ -100,7 +100,11 @@ export type MotionMetrics = {
   estimatedGaitSpeedMetersPerSecond?: number;
   gaitSpeedEstimateSource?: "course_distance" | "estimated_step_length";
   analysisMode?: "heuristic" | "reconstruction_full" | "reconstruction_reduced";
-  absoluteEstimateMethod?: "height_regression" | "course_distance" | "none";
+  absoluteEstimateMethod?:
+    | "height_regression"
+    | "course_distance"
+    | "calibration_walk"
+    | "none";
   trajectoryShape?: {
     verticalExcursionM?: number;
     forwardExcursionM?: number;

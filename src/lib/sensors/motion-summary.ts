@@ -30,6 +30,7 @@ export function summarizeMotionSamples(input: {
   distanceMeters?: number;
   durationSeconds: number;
   stepLengthMeters?: number;
+  stepLengthEstimateMethod?: "height_regression" | "calibration_walk";
 }): MotionMetrics {
   const metrics = analyzeGaitReconstruction(input);
 

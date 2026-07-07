@@ -3,6 +3,7 @@ import {
   analysisModeLabel,
   gaitSpeedLabel,
   shapeResultItem,
+  speedSourceLabel,
 } from "../../src/components/assessment/screens/gait-display";
 import type { MotionMetrics } from "../../src/types/assessment";
 
@@ -28,12 +29,38 @@ describe("gait display helpers", () => {
     expect(
       gaitSpeedLabel(
         motion({
+          absoluteEstimateMethod: "calibration_walk",
+          gaitSpeedMetersPerSecond: 0.9,
+        }),
+      ),
+    ).toBe("Calibration speed");
+    expect(
+      gaitSpeedLabel(
+        motion({
           absoluteEstimateMethod: "height_regression",
           gaitSpeedMetersPerSecond: 0.9,
         }),
       ),
     ).toBe("Estimated speed");
     expect(gaitSpeedLabel(motion({}))).toBe("Gait speed");
+  });
+
+  test("labels speed source by estimate method", () => {
+    expect(
+      speedSourceLabel(
+        motion({
+          absoluteEstimateMethod: "calibration_walk",
+        }),
+      ),
+    ).toBe("Calibration walk");
+    expect(
+      speedSourceLabel(
+        motion({
+          absoluteEstimateMethod: "height_regression",
+        }),
+      ),
+    ).toBe("Estimated");
+    expect(speedSourceLabel(motion({}))).toBe("Not measured");
   });
 
   test("labels reconstruction analysis mode", () => {
