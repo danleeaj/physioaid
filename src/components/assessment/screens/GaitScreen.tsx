@@ -134,7 +134,7 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
         />
         <SafetyCallout>
           Walk to the marked line. At the line, stop walking and stand still.
-          Then take out the phone and press Stop.
+          The calibration will finish after about three seconds of stillness.
         </SafetyCallout>
         <FormGrid>
           <TextField
@@ -205,6 +205,10 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
   if (gaitPhase === "start" && calibrationView === "capture") {
     return (
       <TestStartPanel
+        autoStopOnStandstill={{
+          stillSeconds: 3,
+          completionCue: "Calibration complete.",
+        }}
         countdownCueWord="start walking"
         fallbackActions={[
           {
@@ -227,7 +231,9 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
         }}
         primaryLabel="Start calibration walk"
         resultItems={[]}
-        safetyInstruction="Walk the marked distance at your usual safe pace. Stop at the line, stand still, then remove the phone and press Stop."
+        guidedActiveCue="Start walking. At the marked line, stop and stand still until you hear calibration complete."
+        guidedBaselineCue="Stand still. Start walking when you hear start walking."
+        safetyInstruction="Walk the marked distance at your usual safe pace. Stop at the line and stand still until you hear calibration complete."
         showMotionReadout
         statusItems={[
           {

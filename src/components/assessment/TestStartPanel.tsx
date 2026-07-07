@@ -9,6 +9,7 @@ import {
   requestMotionPermission,
   startMotionCapture,
 } from "@/lib/sensors/browser-motion";
+import { createStandstillAutoStopDetector } from "@/lib/sensors/standstill-auto-stop";
 import { createStepCounter, type StepProgress } from "@/lib/sensors/step-detection";
 import type { MotionSample } from "@/types/motion";
 
@@ -74,6 +75,16 @@ type TestStartPanelProps = {
    * even though the phone can't be seen once it's in a pocket.
    */
   autoStopDistance?: { targetMeters: number; stepLengthMeters: number };
+  /**
+   * Optional active-phase auto-finish for one-phone tests where the user
+   * cannot press Stop at the finish line. The detector waits until walking
+   * has started, then finishes after the required stillness window.
+   */
+  autoStopOnStandstill?: { stillSeconds: number; completionCue?: string };
+  /** Spoken cue during the guided baseline stage. */
+  guidedBaselineCue?: string;
+  /** Spoken cue immediately when the active phase starts. */
+  guidedActiveCue?: string;
   children?: ReactNode;
 };
 
@@ -142,6 +153,9 @@ export function TestStartPanel({
   countdownCueWord = "begin",
   calibrationSeconds,
   autoStopDistance,
+  autoStopOnStandstill,
+  guidedBaselineCue,
+  guidedActiveCue,
   children,
 }: TestStartPanelProps) {
   const { t, speak, stopSpeaking } = useLanguage();
@@ -159,6 +173,9 @@ export function TestStartPanel({
   const stepCounterRef = useRef<ReturnType<typeof createStepCounter> | null>(
     null,
   );
+  const standstillAutoStopRef = useRef<ReturnType<
+    typeof createStandstillAutoStopDetector
+  > | null>(null);
   const calibrationStartRef = useRef(0);
   const calibrationEndRef = useRef(0);
   const cancelledRef = useRef(false);
@@ -203,6 +220,7 @@ export function TestStartPanel({
       samplesRef.current.push(sample);
       setMotionSampleCount(samplesRef.current.length);
       stepCounterRef.current?.addSample(sample);
+      standstillAutoStopRef.current?.addSample(sample);
     });
   }
 
@@ -211,6 +229,21 @@ export function TestStartPanel({
     activeStartedAtRef.current = Date.now();
     setGuidedStage("active");
     setRunState("running");
+
+    if (autoStopOnStandstill) {
+      standstillAutoStopRef.current = createStandstillAutoStopDetector({
+        requiredStillMs: autoStopOnStandstill.stillSeconds * 1000,
+        onStandstill: () => {
+          const elapsed = Math.max(
+            1,
+            Math.ceil((Date.now() - activeStartedAtRef.current) / 1000),
+          );
+          finishRunRef.current(elapsed);
+        },
+      });
+    } else {
+      standstillAutoStopRef.current = null;
+    }
 
     if (autoStopDistance) {
       stepCounterRef.current = createStepCounter({
@@ -231,15 +264,20 @@ export function TestStartPanel({
     } else {
       stepCounterRef.current = null;
     }
+
+    if (guidedPocketMode && guidedActiveCue) {
+      speak(guidedActiveCue);
+    }
   }
 
   function finishRun(elapsed: number) {
     if (finishedRef.current) return;
     finishedRef.current = true;
+    standstillAutoStopRef.current = null;
     stopCaptureRef.current();
     setGuidedStage(null);
     if (guidedPocketMode) {
-      speak("Test complete.");
+      speak(autoStopOnStandstill?.completionCue ?? "Test complete.");
       vibrate([120, 80, 120]);
     }
     const calibrationSamples =
@@ -262,6 +300,11 @@ export function TestStartPanel({
   });
 
   async function startRun() {
+    const runStartResult = await onRunStart?.();
+    if (runStartResult === false) {
+      return;
+    }
+
     if (!guidedPocketMode) {
       beginCapture();
       beginActivePhase();
@@ -293,7 +336,7 @@ export function TestStartPanel({
     if (cancelledRef.current) return;
 
     setGuidedStage("baseline");
-    speak("Stand still.");
+    speak(guidedBaselineCue ?? "Stand still.");
     beginCapture();
     await wait(BASELINE_MS);
     if (cancelledRef.current) return;
@@ -324,6 +367,7 @@ export function TestStartPanel({
   function cancelGuidedSequence() {
     cancelledRef.current = true;
     stopSpeaking();
+    standstillAutoStopRef.current = null;
     stopCaptureRef.current();
     setGuidedStage(null);
   }
@@ -409,6 +453,12 @@ export function TestStartPanel({
               Distance: {(stepProgress?.distanceMeters ?? 0).toFixed(1)}m /{" "}
               {autoStopDistance.targetMeters}m ({stepProgress?.stepCount ?? 0}{" "}
               steps)
+            </p>
+          )}
+          {autoStopOnStandstill && (
+            <p aria-live="polite" className="text-sm text-[var(--muted)]">
+              Finishes after {autoStopOnStandstill.stillSeconds}s standing
+              still
             </p>
           )}
           <p className="text-[length:var(--text-lead)] font-semibold text-[var(--danger)]">
