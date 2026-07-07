@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
   analysisModeLabel,
+  gaitResultItems,
+  gaitSourceLabel,
   gaitSpeedLabel,
   shapeResultItem,
   speedSourceLabel,
@@ -91,5 +93,52 @@ describe("gait display helpers", () => {
       ),
     ).toEqual({ label: "Vertical motion", value: "6 cm" });
     expect(shapeResultItem(motion({}))).toBeNull();
+  });
+
+  test("builds reusable gait result items", () => {
+    expect(
+      gaitResultItems(
+        motion({
+          absoluteEstimateMethod: "calibration_walk",
+          analysisMode: "reconstruction_full",
+          cadenceStepsPerMinute: 104.4,
+          cycleQualityScore: 0.82,
+          gaitSpeedMetersPerSecond: 0.91,
+          rhythmConsistency: 0.68,
+          stabilityScore: 0.73,
+          stepCount: 44,
+          trajectoryShape: {
+            symmetry: 0.7,
+          },
+        }),
+      ),
+    ).toEqual([
+      { label: "Calibration speed", value: "0.91 m/s" },
+      { label: "Cadence", value: "104.4 steps/min" },
+      { label: "Steps", value: "44" },
+      { label: "Rhythm", value: "68%" },
+      { label: "Stability", value: "73%" },
+      { label: "Quality", value: "82%" },
+      { label: "Mode", value: "Full sensor" },
+      { label: "Symmetry", value: "70%" },
+    ]);
+  });
+
+  test("labels gait source and stopped status", () => {
+    expect(gaitSourceLabel(motion({ source: "accelerometer" }))).toBe(
+      "Live sensor",
+    );
+    expect(gaitSourceLabel(motion({ source: "manual" }))).toBe(
+      "Manual entry",
+    );
+    expect(gaitSourceLabel(motion({ source: "demo" }))).toBe("Demo result");
+    expect(
+      gaitSourceLabel(
+        motion({
+          completionStatus: "stopped",
+          source: "manual",
+        }),
+      ),
+    ).toBe("Stopped");
   });
 });
