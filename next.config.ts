@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: process.env.ALLOWED_DEV_ORIGINS
+    ? process.env.ALLOWED_DEV_ORIGINS.split(",")
+    : [],
   turbopack: {
     root: process.cwd(),
   },
@@ -21,9 +24,5 @@ const nextConfig: NextConfig = {
     ];
   },
 };
-
-module.exports = {
-  allowedDevOrigins: ['192.168.0.5'],
-}
 
 export default nextConfig;
