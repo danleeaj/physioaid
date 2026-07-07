@@ -39,6 +39,31 @@ describe("summarizeMotionSamples", () => {
     expect(metrics.estimatedGaitSpeedMetersPerSecond).toBe(
       metrics.gaitSpeedMetersPerSecond,
     );
+    expect(metrics.analysisMode).toMatch(
+      /^(heuristic|reconstruction_full|reconstruction_reduced)$/,
+    );
+    expect(metrics.absoluteEstimateMethod).toBe("height_regression");
+  });
+
+  test("maps reduced reconstruction when gyro is absent", () => {
+    const samples = regularWalk(25).map((sample) => ({
+      timestampMs: sample.timestampMs,
+      accelerationX: sample.accelerationX,
+      accelerationY: sample.accelerationY,
+      accelerationZ: sample.accelerationZ,
+    }));
+
+    const metrics = summarizeMotionSamples({
+      durationSeconds: 25,
+      samples,
+      stepLengthMeters: 0.68,
+    });
+
+    expect(metrics.completionStatus).toBe("completed");
+    expect(metrics.source).toBe("accelerometer");
+    expect(metrics.analysisMode).toBe("reconstruction_reduced");
+    expect(metrics.trajectoryShape?.verticalExcursionM).toBeGreaterThan(0);
+    expect(metrics.trajectoryShape?.forwardExcursionM).toBeUndefined();
   });
 
   test("uses explicit distance as the gait speed source when provided", () => {

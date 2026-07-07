@@ -47,6 +47,7 @@ describe("direct gait flow", () => {
     expect(metrics.completionStatus).toBe("completed");
     expect(metrics.source).toBe("accelerometer");
     expect(metrics.gaitSpeedEstimateSource).toBe("estimated_step_length");
+    expect(metrics.absoluteEstimateMethod).toBe("height_regression");
     expect(metrics.stepCount).toBeGreaterThanOrEqual(45);
   });
 
