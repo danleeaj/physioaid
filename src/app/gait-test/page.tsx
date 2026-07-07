@@ -8,8 +8,10 @@ export const metadata: Metadata = {
 
 export default function GaitTestPage() {
   return (
-    <main className="min-h-dvh pb-[env(safe-area-inset-bottom)]">
-      <DirectGaitTestScreen />
-    </main>
+    <div className="app-viewport">
+      <main className="app-shell">
+        <DirectGaitTestScreen />
+      </main>
+    </div>
   );
 }

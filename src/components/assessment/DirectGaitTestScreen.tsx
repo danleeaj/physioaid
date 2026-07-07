@@ -51,17 +51,15 @@ export function DirectGaitTestScreen() {
   };
 
   return (
-    <div className="app-viewport">
-      <main className="app-shell">
-        <TopBar title="Direct gait test" />
-        <div className="app-content flex-1">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[length:var(--text-caption)] text-[var(--muted)]">
-            <p>Direct gait test route</p>
-            <p className="font-bold">Version: {DIRECT_GAIT_TEST_VERSION}</p>
-          </div>
-          <GaitScreen flow={flow} />
+    <>
+      <TopBar title="Direct gait test" />
+      <div className="app-content flex-1">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[length:var(--text-caption)] text-[var(--muted)]">
+          <p>Direct gait test route</p>
+          <p className="font-bold">Version: {DIRECT_GAIT_TEST_VERSION}</p>
         </div>
-      </main>
-    </div>
+        <GaitScreen flow={flow} />
+      </div>
+    </>
   );
 }
