@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "firebase": "^12.15.0",
+    "gl-matrix": "^3.4.4",
     "lucide-react": "^1.23.0",
     "motion": "^12.42.2",
     "next": "16.2.10",

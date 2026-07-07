@@ -70,6 +70,32 @@ function toFiniteVector(vector: DeviceMotionEventAcceleration | null) {
 }
 
 /**
+ * Converts a browser DeviceMotion event into the gait sample shape.
+ * Gait reconstruction requires acceleration including gravity, so missing
+ * `accelerationIncludingGravity` is treated as no usable sample.
+ */
+export function motionSampleFromDeviceMotionEvent(
+  event: DeviceMotionEvent,
+  timestampMs: number,
+): MotionSample | null {
+  const acceleration = toFiniteVector(event.accelerationIncludingGravity);
+
+  if (!acceleration) {
+    return null;
+  }
+
+  return {
+    timestampMs,
+    accelerationX: acceleration.x,
+    accelerationY: acceleration.y,
+    accelerationZ: acceleration.z,
+    rotationAlpha: toFiniteNumber(event.rotationRate?.alpha) ?? undefined,
+    rotationBeta: toFiniteNumber(event.rotationRate?.beta) ?? undefined,
+    rotationGamma: toFiniteNumber(event.rotationRate?.gamma) ?? undefined,
+  };
+}
+
+/**
  * Subscribes to real `devicemotion` events and reports each sample.
  * Returns an unsubscribe function. No-op (never calls back) if the
  * browser doesn't expose the event.
@@ -82,23 +108,13 @@ export function startMotionCapture(
   }
 
   const handleMotion = (event: DeviceMotionEvent) => {
-    const acceleration =
-      toFiniteVector(event.accelerationIncludingGravity) ??
-      toFiniteVector(event.acceleration);
+    const sample = motionSampleFromDeviceMotionEvent(event, performance.now());
 
-    if (!acceleration) {
+    if (!sample) {
       return;
     }
 
-    onSample({
-      timestampMs: performance.now(),
-      accelerationX: acceleration.x,
-      accelerationY: acceleration.y,
-      accelerationZ: acceleration.z,
-      rotationAlpha: toFiniteNumber(event.rotationRate?.alpha) ?? undefined,
-      rotationBeta: toFiniteNumber(event.rotationRate?.beta) ?? undefined,
-      rotationGamma: toFiniteNumber(event.rotationRate?.gamma) ?? undefined,
-    });
+    onSample(sample);
   };
 
   window.addEventListener("devicemotion", handleMotion);
