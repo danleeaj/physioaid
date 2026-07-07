@@ -40,6 +40,29 @@ describe("compact gait panels", () => {
     expect(html).not.toContain("Enable motion");
   });
 
+  test("constrains the ready panel to a single phone-width grid column", () => {
+    const html = renderToStaticMarkup(
+      <GaitCompactReadyPanel
+        canUseCalibration
+        motionStatus={{
+          ...grantedStatus,
+          message:
+            "Motion sensors appear available without an extra browser permission prompt.",
+        }}
+        onCalibrate={() => undefined}
+        onEnableMotion={() => undefined}
+        onManualEntry={() => undefined}
+        onMarkStopped={() => undefined}
+        onStart={() => undefined}
+      />,
+    );
+
+    expect(html).toContain('class="grid min-w-0 grid-cols-1 gap-4"');
+    expect(html).toContain(
+      'class="quiet-card grid min-w-0 grid-cols-1 gap-3 p-4"',
+    );
+  });
+
   test("renders pending permission as an enable button", () => {
     const html = renderToStaticMarkup(
       <GaitCompactReadyPanel

@@ -27,8 +27,8 @@ export function GaitCompactReadyPanel({
   const ready = motionReady(motionStatus);
 
   return (
-    <section className="grid gap-4">
-      <header className="grid gap-2">
+    <section className="grid min-w-0 grid-cols-1 gap-4">
+      <header className="grid min-w-0 gap-2">
         <p className="eyebrow">Motion gait walk</p>
         <h1 className="text-[length:var(--text-title)] font-semibold">
           Gait walk test
@@ -38,7 +38,7 @@ export function GaitCompactReadyPanel({
         </p>
       </header>
 
-      <div className="quiet-card grid gap-3 p-4">
+      <div className="quiet-card grid min-w-0 grid-cols-1 gap-3 p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
             {ready ? (
@@ -74,9 +74,9 @@ export function GaitCompactReadyPanel({
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid min-w-0 grid-cols-2 gap-3">
           <button
-            className="secondary-action"
+            className="secondary-action min-w-0"
             disabled={!canUseCalibration}
             onClick={onCalibrate}
             type="button"
@@ -84,14 +84,18 @@ export function GaitCompactReadyPanel({
             <TimerReset aria-hidden size={18} />
             Calibrate
           </button>
-          <button className="secondary-action" onClick={onManualEntry} type="button">
+          <button
+            className="secondary-action min-w-0"
+            onClick={onManualEntry}
+            type="button"
+          >
             Enter manually
           </button>
         </div>
       </div>
 
       <button
-        className="primary-action min-h-28 w-full justify-center text-xl"
+        className="primary-action min-h-28 w-full min-w-0 justify-center text-xl"
         onClick={onStart}
         type="button"
       >
@@ -100,7 +104,7 @@ export function GaitCompactReadyPanel({
       </button>
 
       <button
-        className="secondary-action w-full justify-center"
+        className="secondary-action w-full min-w-0 justify-center"
         onClick={onMarkStopped}
         type="button"
       >
@@ -120,8 +124,8 @@ export function GaitTestInstructionPanel({
   onStart: () => void;
 }) {
   return (
-    <section className="grid gap-4">
-      <header className="grid gap-2">
+    <section className="grid min-w-0 grid-cols-1 gap-4">
+      <header className="grid min-w-0 gap-2">
         <p className="eyebrow">Guided walk</p>
         <h1 className="text-[length:var(--text-title)] font-semibold">TEST</h1>
         <p className="text-[length:var(--text-body)] text-[var(--muted)]">
@@ -129,7 +133,7 @@ export function GaitTestInstructionPanel({
         </p>
       </header>
 
-      <div className="quiet-card grid gap-3 p-4">
+      <div className="quiet-card grid min-w-0 grid-cols-1 gap-3 p-4">
         <p className="font-semibold">
           Walk for {durationSeconds} seconds at your usual safe pace.
         </p>
@@ -141,7 +145,7 @@ export function GaitTestInstructionPanel({
       </div>
 
       <button
-        className="primary-action min-h-20 w-full justify-center text-xl"
+        className="primary-action min-h-20 w-full min-w-0 justify-center text-xl"
         onClick={onStart}
         type="button"
       >
@@ -149,7 +153,7 @@ export function GaitTestInstructionPanel({
         Start
       </button>
       <button
-        className="secondary-action w-full justify-center"
+        className="secondary-action w-full min-w-0 justify-center"
         onClick={onBack}
         type="button"
       >
