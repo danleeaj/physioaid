@@ -5,14 +5,14 @@ Branch: `feature/daniel-motion-tests`
 
 ## Summary
 
-Physio-Aid will add an optional profile-level gait calibration walk. The calibration lets a user walk a known marked distance once, then reuse the resulting calibrated step length in future timed gait walks.
+Physio-Aid will add an optional current-session gait calibration walk. The calibration lets a user walk a known marked distance immediately before the gait test, then uses the resulting calibrated step length for that assessment run only.
 
 This design assumes a one-phone flow. The phone is in the user's pocket during walking, so the Stop button cannot be treated as the finish-line timestamp. Instead, Stop means "end recording." The analysis must infer the actual walking segment from sensor data and trim the phone-removal / stop-button tail.
 
 ## Goals
 
 - Add an optional measured-distance calibration path for gait speed estimates.
-- Save successful calibration to the user profile for reuse across future assessments.
+- Keep successful calibration in the current gait screen/session only.
 - Keep the existing 25-second timed gait walk as the default path.
 - Make calibration use explicit in result metadata through `absoluteEstimateMethod: "calibration_walk"`.
 - Fail safely when calibration quality is poor, implausible, or contaminated by phone handling.
@@ -26,14 +26,15 @@ This design assumes a one-phone flow. The phone is in the user's pocket during w
 - No raw sensor-stream persistence by default.
 - No change to floor-rising or camera modules.
 - No separate caregiver device or remote stop control in this slice.
+- No user profile, Firestore, localStorage, or cross-assessment calibration persistence.
 
 ## Recommended Approach
 
-Use an optional profile-level calibration flow.
+Use an optional session-level calibration flow.
 
 Rejected alternatives:
 
-- Session-only calibration: lower persistence risk, but weak utility because users would need to repeat calibration frequently.
+- Profile-level calibration: more convenient long term, but we are explicitly avoiding profile persistence in this slice.
 - Replacing the timed walk with a measured-distance walk: more accurate speed but higher setup burden and worse default UX.
 
 ## One-Phone Constraint
@@ -81,7 +82,7 @@ Calibration flow:
    - Stand still briefly.
    - Remove phone and press Stop.
 4. Result.
-   - Save calibration if quality passes.
+   - Use calibration for the next timed gait walk in this screen if quality passes.
    - Show retry if quality fails.
    - Keep fallback to timed walk without calibration.
 
@@ -89,10 +90,10 @@ Calibration must not be available when the chair stand gate blocks gait walking.
 
 ## Data Model
 
-Add profile-level gait calibration:
+Add a session-only calibration value owned by the gait screen state:
 
 ```ts
-export type GaitCalibration = {
+export type GaitSessionCalibration = {
   calibratedStepLengthMeters: number;
   calibrationDistanceMeters: number;
   calibrationWalkDurationSeconds: number;
@@ -102,7 +103,7 @@ export type GaitCalibration = {
 };
 ```
 
-Store it on the existing user profile state used by `useUserProfile()`. Do not add a new backend persistence system in this slice unless the current profile provider already persists profile fields.
+Do not add this field to `UserProfile`. Do not persist it to Firestore, localStorage, demo profile overrides, or assessment history in this slice. It exists only while the current gait screen is mounted.
 
 Extend gait estimate method:
 
@@ -134,7 +135,7 @@ Calibration analyzer output:
 type GaitCalibrationResult =
   | {
       status: "accepted";
-      calibration: GaitCalibration;
+      calibration: GaitSessionCalibration;
       walkingSegment: {
         startMs: number;
         endMs: number;
@@ -181,7 +182,7 @@ courseSpeedMetersPerSecond =
   enteredDistanceMeters / calibrationWalkDurationSeconds;
 ```
 
-The saved calibration only needs step length and quality fields. The course speed can be displayed in the calibration result but does not need to be persisted unless useful later.
+The accepted session calibration keeps the fields in `GaitSessionCalibration`. The course speed can be displayed in the calibration result, but it should not be added to persisted assessment history in this slice.
 
 ## Validity Rules
 
@@ -202,41 +203,40 @@ Reject calibration when:
 - The detected step length is implausible.
 - The walking segment cannot be separated from handling motion.
 
-Failed calibration must not overwrite a previous valid calibration.
+Failed calibration must not overwrite a previous accepted calibration in the current gait screen state.
 
 ## Normal Gait Walk Integration
 
-Default timed gait remains unchanged. When a valid profile calibration exists, normal gait analysis should use:
+Default timed gait remains unchanged. When a valid session calibration exists, the next normal gait analysis should use:
 
 ```ts
 stepLengthMeters =
-  profile.gaitCalibration?.calibratedStepLengthMeters
+  sessionCalibration?.calibratedStepLengthMeters
     ?? heightRegressionStepLengthMeters;
 ```
 
-When profile calibration is used, the result should include:
+When session calibration is used, the result should include:
 
 ```ts
 absoluteEstimateMethod: "calibration_walk";
 ```
 
-If no calibration exists, keep the current height-regression estimate:
+If no session calibration exists, keep the current height-regression estimate:
 
 ```ts
 absoluteEstimateMethod: "height_regression";
 ```
 
-Calibration must not override safety gates. If the current gait capture is stopped, unstable, or poor quality, the gait result remains stopped/blocked even when a calibration exists.
+Calibration must not override safety gates. If the current gait capture is stopped, unstable, or poor quality, the gait result remains stopped/blocked even when a session calibration exists.
 
 ## UI Changes
 
 Gait screen additions:
 
 - Secondary action: `Use measured distance`.
-- Status label when calibration exists:
+- Status label when session calibration exists:
   - `Speed: Calibration walk`
-  - `Calibration: <date>`
-- Status label without calibration:
+- Status label without session calibration:
   - `Speed: Estimated`
 
 Calibration result states:
@@ -259,7 +259,7 @@ Do not add clinical claims. Calibration improves estimate scaling; it does not v
 - Motion permission denial returns to existing fallback options.
 - Chair stand gate failure blocks calibration and gait walking.
 - Calibration failure does not block the normal timed walk unless the current safety gate says gait walking should not proceed.
-- Previous valid calibration remains unchanged after a failed recalibration.
+- Previous accepted calibration in the current screen remains unchanged after a failed recalibration.
 
 ## Testing Strategy
 
@@ -270,9 +270,9 @@ Add focused unit tests for:
 - calibration rejects samples without a clean standstill finish.
 - calibration rejects implausible step length.
 - accepted calibration produces `calibratedStepLengthMeters` from entered distance and detected step count.
-- failed recalibration does not overwrite previous profile calibration.
-- normal gait summary uses `calibration_walk` when profile calibration supplies step length.
-- normal gait still fails closed when current capture is unusable, even with saved calibration.
+- failed recalibration does not overwrite the current screen's previously accepted calibration.
+- normal gait summary uses `calibration_walk` when session calibration supplies step length.
+- normal gait still fails closed when current capture is unusable, even with session calibration.
 
 Verification commands:
 
@@ -285,16 +285,16 @@ bun run build
 ## Risks
 
 - Finish detection can be ambiguous if the user removes the phone immediately at the line.
-- Very short distances produce noisy step-length estimates. A 4 m minimum is supported, but 6-10 m is preferred.
+- Very short distances produce noisy step-length estimates. A 3 m lower bound is supported for constrained spaces, but 6-10 m is preferred when available.
 - Users may enter an incorrect distance. Plausibility checks reduce but cannot eliminate this risk.
-- Profile-level reuse can become stale over time. This design stores `calibratedAt` so the UI can surface age and future work can add expiry rules.
+- Session-only calibration means users must recalibrate in a future assessment if they want calibrated estimates again.
 
 ## Acceptance Criteria
 
-- Calibration is optional and profile-level.
+- Calibration is optional and current-session only.
 - Stop button is not used as finish-line time.
 - Phone-removal tail is trimmed or calibration is rejected.
-- Successful calibration stores step length, distance, duration, step count, quality, and timestamp.
-- Failed calibration does not overwrite existing calibration.
-- Normal gait uses saved calibration for speed estimate labeling when available.
+- Successful calibration keeps step length, distance, duration, step count, quality, and timestamp in gait screen state.
+- Failed calibration does not overwrite existing session calibration.
+- Normal gait uses session calibration for speed estimate labeling when available.
 - Safety gates and fallbacks remain intact.
