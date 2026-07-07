@@ -9,6 +9,12 @@ import { permissionLabel } from "@/components/assessment/ui/permission-labels";
 import { SafetyCallout } from "@/components/assessment/ui/SafetyCallout";
 import { ScreenHeader } from "@/components/assessment/ui/ScreenHeader";
 import { useUserProfile } from "@/components/auth/UserProfileProvider";
+import {
+  analysisModeLabel,
+  gaitSpeedLabel,
+  shapeResultItem,
+  speedSourceLabel,
+} from "@/components/assessment/screens/gait-display";
 import { gaitProtocol } from "@/lib/sensors/gait-protocol";
 import { getDemoMotionMetrics } from "@/lib/sensors/motion-summary";
 import {
@@ -52,6 +58,7 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
   const [motionStatus, setMotionStatus] = useState<MotionSupportStatus>();
   const heightCm = profile?.heightCm ?? Math.round(DEFAULT_HEIGHT_METERS * 100);
   const stepLengthMeters = estimateStepLengthMeters(heightCm / 100);
+  const shapeItem = shapeResultItem(motion);
 
   if (gaitPhase === "demo") {
     return <GaitWalkDemo onContinue={() => setGaitPhase("start")} />;
@@ -79,7 +86,7 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
         primaryLabel="Start 25 sec walk"
         resultItems={[
           {
-            label: "Gait speed",
+            label: gaitSpeedLabel(motion),
             value: `${motion.gaitSpeedMetersPerSecond ?? 0} m/s`,
           },
           {
@@ -108,6 +115,11 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
             label: "Quality",
             value: `${Math.round((motion.cycleQualityScore ?? 0) * 100)}%`,
           },
+          {
+            label: "Mode",
+            value: analysisModeLabel(motion.analysisMode),
+          },
+          ...(shapeItem ? [shapeItem] : []),
         ]}
         safetyInstruction="Walk at your usual safe pace for 25 seconds with the phone placed in a front pocket."
         showMotionReadout
@@ -122,10 +134,7 @@ export function GaitScreen({ flow }: { flow: GaitScreenFlow }) {
           },
           {
             label: "Speed",
-            value:
-              motion.gaitSpeedEstimateSource === "course_distance"
-                ? "Course distance"
-                : "Step estimate",
+            value: speedSourceLabel(motion),
           },
         ]}
         title="Gait walk test"
